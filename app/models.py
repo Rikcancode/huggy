@@ -1,0 +1,125 @@
+from datetime import datetime, date
+from sqlalchemy import (
+    Column, Integer, String, Float, Boolean, DateTime, Date,
+    ForeignKey, Text, UniqueConstraint,
+)
+from sqlalchemy.types import TypeDecorator
+import json
+
+
+class JSONType(TypeDecorator):
+    """SQLite-compatible JSON column."""
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value)
+        return "{}"
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return json.loads(value)
+        return {}
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    api_key = Column(String(128), unique=True, nullable=False)
+    role = Column(String(20), nullable=False, default="user")  # admin | user
+    language = Column(String(5), nullable=False, default="en")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False, unique=True)
+    icon = Column(String(10), default="📦")
+    sort_order = Column(Integer, default=0)
+    translations = Column(JSONType, default=dict)
+
+    items = relationship("LibraryItem", back_populates="category")
+
+
+class LibraryItem(Base):
+    __tablename__ = "library_items"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False, unique=True)
+    icon = Column(String(10), nullable=True)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    default_quantity = Column(Float, nullable=False, default=1.0)
+    unit = Column(String(20), nullable=False, default="unit")
+    image_url = Column(String(500), nullable=True)
+    notes = Column(Text, nullable=True)
+    translations = Column(JSONType, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    category = relationship("Category", back_populates="items")
+    reminders = relationship("RepurchaseReminder", back_populates="library_item")
+
+
+class GroceryList(Base):
+    __tablename__ = "grocery_lists"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    items = relationship("GroceryListItem", back_populates="grocery_list", cascade="all, delete-orphan")
+
+
+class GroceryListItem(Base):
+    __tablename__ = "grocery_list_items"
+    __table_args__ = (
+        UniqueConstraint("list_id", "library_item_id", name="uq_list_library_item"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    list_id = Column(Integer, ForeignKey("grocery_lists.id", ondelete="CASCADE"), nullable=False)
+    library_item_id = Column(Integer, ForeignKey("library_items.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String(20), nullable=False)
+    status = Column(String(20), nullable=False, default="pending")  # pending | purchased
+    added_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    purchased_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    purchased_at = Column(DateTime, nullable=True)
+    expiration_date = Column(Date, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    grocery_list = relationship("GroceryList", back_populates="items")
+    library_item = relationship("LibraryItem")
+    added_by = relationship("User", foreign_keys=[added_by_id])
+    purchased_by = relationship("User", foreign_keys=[purchased_by_id])
+
+
+class SupermarketPreset(Base):
+    __tablename__ = "supermarket_presets"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False, unique=True)
+    category_order = Column(JSONType, default=list)
+
+
+class RepurchaseReminder(Base):
+    __tablename__ = "repurchase_reminders"
+
+    id = Column(Integer, primary_key=True)
+    library_item_id = Column(Integer, ForeignKey("library_items.id"), nullable=False)
+    interval_days = Column(Integer, nullable=False)
+    last_purchased = Column(DateTime, nullable=True)
+    next_due = Column(DateTime, nullable=True)
+    active = Column(Boolean, default=True)
+
+    library_item = relationship("LibraryItem", back_populates="reminders")

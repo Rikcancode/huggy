@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grocery List — Admin</title>
+<style>
+:root {
+  --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+  --text: #e4e4e7; --muted: #8b8d98; --accent: #6c63ff;
+  --accent-hover: #5a52e0; --green: #34d399; --red: #f87171;
+  --orange: #fb923c; --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.5; }
+
+.app { max-width: 1100px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.5rem; margin-bottom: 8px; }
+h2 { font-size: 1.15rem; color: var(--muted); margin-bottom: 16px; }
+
+nav { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+nav button { padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); cursor: pointer; font-size: .9rem; }
+nav button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+nav button:hover:not(.active) { border-color: var(--accent); }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: .85rem; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--bg); }
+tr:hover { background: var(--surface); }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .75rem; }
+.badge-pending { background: var(--orange); color: #000; }
+.badge-purchased { background: var(--green); color: #000; }
+
+button, .btn { padding: 6px 14px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); cursor: pointer; font-size: .85rem; }
+button:hover, .btn:hover { border-color: var(--accent); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-danger { color: var(--red); }
+.btn-sm { padding: 3px 8px; font-size: .78rem; }
+
+input, select, textarea { padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: .85rem; width: 100%; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+.form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.form-row > * { flex: 1; min-width: 140px; }
+.form-row label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 3px; }
+
+.toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+.toolbar input { max-width: 300px; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex;
+  align-items: center; justify-content: center; z-index: 100; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; text-align: center; }
+.stat-card .num { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.stat-card .label { font-size: .8rem; color: var(--muted); }
+
+.list-group { margin-bottom: 20px; }
+.list-group h3 { font-size: .95rem; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.list-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+.list-item.purchased { opacity: .5; text-decoration: line-through; }
+.list-item .qty { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.list-item .name { flex: 1; }
+.list-item .actions { display: flex; gap: 4px; }
+
+.item-icon { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
+.item-thumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+
+.img-upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 16px;
+  text-align: center; cursor: pointer; color: var(--muted); font-size: .85rem; transition: border-color .2s; }
+.img-upload-zone:hover { border-color: var(--accent); }
+.img-upload-zone.has-image { border-style: solid; }
+.img-preview { max-width: 120px; max-height: 80px; border-radius: 4px; margin-top: 8px; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-header { padding: 8px 4px; text-align: center; font-size: .75rem; font-weight: 600; color: var(--muted); }
+.cal-cell { min-height: 90px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 4px 6px; font-size: .78rem; overflow: hidden; position: relative; }
+.cal-cell.today { border-color: var(--accent); border-width: 2px; }
+.cal-cell.other-month { opacity: .35; }
+.cal-day { font-weight: 700; font-size: .8rem; margin-bottom: 2px; color: var(--muted); }
+.cal-item { display: flex; align-items: center; gap: 3px; padding: 2px 4px; margin: 1px 0;
+  border-radius: 3px; font-size: .72rem; line-height: 1.3; cursor: default; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.cal-item.expired { background: rgba(248,113,113,.2); color: var(--red); }
+.cal-item.soon { background: rgba(251,146,60,.2); color: var(--orange); }
+.cal-item.ok { background: rgba(52,211,153,.15); color: var(--green); }
+.cal-more { font-size: .7rem; color: var(--muted); padding: 1px 4px; cursor: pointer; }
+.cal-legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: .8rem; color: var(--muted); align-items: center; }
+.cal-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.cal-dot-expired { background: var(--red); }
+.cal-dot-soon { background: var(--orange); }
+.cal-dot-ok { background: var(--green); }
+
+.toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: var(--radius);
+  background: var(--green); color: #000; font-weight: 600; z-index: 200; animation: fadeout 3s forwards; }
+@keyframes fadeout { 0%,70% { opacity: 1; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🛒 Grocery List</h1>
+  <h2>Admin Panel</h2>
+
+  <nav id="tabs">
+    <button data-tab="shopping" class="active">Shopping List</button>
+    <button data-tab="calendar">Calendar</button>
+    <button data-tab="library">Library</button>
+    <button data-tab="categories">Categories</button>
+    <button data-tab="supermarkets">Supermarkets</button>
+    <button data-tab="reminders">Reminders</button>
+    <button data-tab="users">Users</button>
+  </nav>
+
+  <!-- SHOPPING LIST -->
+  <div id="panel-shopping" class="panel active">
+    <div class="toolbar">
+      <select id="list-select" style="max-width:240px"><option value="">Select list…</option></select>
+      <select id="supermarket-select" style="max-width:200px"><option value="">Default order</option></select>
+      <button class="btn-primary btn-sm" onclick="promptNewList()">+ New List</button>
+    </div>
+    <div class="toolbar">
+      <input id="add-item-search" placeholder="Add item by name…" list="lib-suggestions">
+      <datalist id="lib-suggestions"></datalist>
+      <button class="btn-primary btn-sm" onclick="addItemByName()">Add</button>
+    </div>
+    <div id="shopping-content"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="panel-calendar" class="panel">
+    <div class="toolbar">
+      <button class="btn-sm" onclick="calNav(-1)">&larr; Prev</button>
+      <span id="cal-title" style="font-weight:600;font-size:1.1rem;min-width:180px;text-align:center"></span>
+      <button class="btn-sm" onclick="calNav(1)">Next &rarr;</button>
+      <button class="btn-sm" onclick="calGoToday()" style="margin-left:8px">Today</button>
+    </div>
+    <div class="cal-legend">
+      <span><span class="cal-dot cal-dot-expired"></span> Expired</span>
+      <span><span class="cal-dot cal-dot-soon"></span> Expiring soon</span>
+      <span><span class="cal-dot cal-dot-ok"></span> OK</span>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+  </div>
+
+  <!-- LIBRARY -->
+  <div id="panel-library" class="panel">
+    <div class="toolbar">
+      <input id="lib-search" placeholder="Search items…" oninput="loadLibrary()">
+      <select id="lib-cat-filter" onchange="loadLibrary()" style="max-width:200px">
+        <option value="">All categories</option>
+      </select>
+      <button class="btn-primary btn-sm" onclick="showItemModal()">+ Add Item</button>
+    </div>
+    <table><thead><tr>
+      <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
+    </tr></thead><tbody id="lib-body"></tbody></table>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div id="panel-categories" class="panel">
+    <div class="toolbar">
+      <button class="btn-primary btn-sm" onclick="showCatModal()">+ Add Category</button>
+    </div>
+    <table><thead><tr><th>Icon</th><th>Name</th><th>Order</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th></tr></thead>
+    <tbody id="cat-body"></tbody></table>
+  </div>
+
+  <!-- SUPERMARKETS -->
+  <div id="panel-supermarkets" class="panel">
+    <div class="toolbar">
+      <button class="btn-primary btn-sm" onclick="showSuperModal()">+ Add Preset</button>
+    </div>
+    <div id="super-list"></div>
+  </div>
+
+  <!-- REMINDERS -->
+  <div id="panel-reminders" class="panel">
+    <div class="toolbar">
+      <button class="btn-primary btn-sm" onclick="showReminderModal()">+ Add Reminder</button>
+    </div>
+    <table><thead><tr><th>Item</th><th>Every (days)</th><th>Next Due</th><th>Active</th><th></th></tr></thead>
+    <tbody id="rem-body"></tbody></table>
+  </div>
+
+  <!-- USERS -->
+  <div id="panel-users" class="panel">
+    <div class="toolbar">
+      <button class="btn-primary btn-sm" onclick="showUserModal()">+ Add User</button>
+    </div>
+    <table><thead><tr><th>Name</th><th>Role</th><th>Language</th><th>API Key</th><th></th></tr></thead>
+    <tbody id="user-body"></tbody></table>
+  </div>
+</div>
+
+<div id="modal-container"></div>
+<div id="toast-container"></div>
+
+<script>
+const API_KEY = localStorage.getItem('grocery_api_key') || prompt('Enter your API key:');
+if (API_KEY) localStorage.setItem('grocery_api_key', API_KEY);
+const H = {'X-API-Key': API_KEY, 'Content-Type': 'application/json'};
+
+let allCategories = [], allLibrary = [], allSupermarkets = [];
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {headers: H, ...opts});
+  if (r.status === 204) return null;
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || r.statusText); }
+  return r.json();
+}
+
+function toast(msg) {
+  const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg;
+  document.getElementById('toast-container').appendChild(d);
+  setTimeout(() => d.remove(), 3100);
+}
+
+function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+
+function modal(title, body, onSave) {
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal"><h3>${title}</h3>${body}
+        <div class="modal-actions">
+          <button onclick="closeModal()">Cancel</button>
+          <button class="btn-primary" id="modal-save">Save</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('modal-save').onclick = onSave;
+}
+
+// ── Tabs ──
+document.getElementById('tabs').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('panel-' + e.target.dataset.tab).classList.add('active');
+  const loaders = {library: loadLibrary, categories: loadCategories, supermarkets: loadSupermarkets,
+    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar};
+  loaders[e.target.dataset.tab]?.();
+});
+
+// ── Categories ──
+async function loadCategories() {
+  allCategories = await api('/categories');
+  document.getElementById('cat-body').innerHTML = allCategories.map(c => `<tr>
+    <td>${c.icon}</td><td>${c.name}</td><td>${c.sort_order}</td>
+    <td>${c.translations?.da || ''}</td><td>${c.translations?.it || ''}</td><td>${c.translations?.bg || ''}</td>
+    <td><button class="btn-sm btn-danger" onclick="delCat(${c.id})">✕</button></td>
+  </tr>`).join('');
+  const sel = document.getElementById('lib-cat-filter');
+  sel.innerHTML = '<option value="">All categories</option>' +
+    allCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+}
+
+function showCatModal(cat = null) {
+  modal(cat ? 'Edit Category' : 'New Category', `
+    <div class="form-row"><div><label>Name</label><input id="m-cat-name" value="${cat?.name || ''}"></div>
+    <div><label>Icon</label><input id="m-cat-icon" value="${cat?.icon || '📦'}"></div>
+    <div><label>Sort Order</label><input id="m-cat-order" type="number" value="${cat?.sort_order || 0}"></div></div>
+    <div class="form-row"><div><label>Danish</label><input id="m-cat-da" value="${cat?.translations?.da || ''}"></div>
+    <div><label>Italian</label><input id="m-cat-it" value="${cat?.translations?.it || ''}"></div>
+    <div><label>Bulgarian</label><input id="m-cat-bg" value="${cat?.translations?.bg || ''}"></div></div>
+  `, async () => {
+    const body = {name: gv('m-cat-name'), icon: gv('m-cat-icon'), sort_order: +gv('m-cat-order'),
+      translations: {da: gv('m-cat-da'), it: gv('m-cat-it'), bg: gv('m-cat-bg')}};
+    await api(cat ? `/categories/${cat.id}` : '/categories', {method: cat ? 'PUT' : 'POST', body: JSON.stringify(body)});
+    closeModal(); toast('Saved'); loadCategories();
+  });
+}
+
+async function delCat(id) { if(!confirm('Delete?')) return; await api(`/categories/${id}`,{method:'DELETE'}); loadCategories(); }
+
+// ── Library ──
+async function loadLibrary() {
+  await loadCategories();
+  const q = document.getElementById('lib-search').value;
+  const cat = document.getElementById('lib-cat-filter').value;
+  let url = '/library?';
+  if (q) url += `q=${encodeURIComponent(q)}&`;
+  if (cat) url += `category_id=${cat}&`;
+  allLibrary = await api(url);
+  document.getElementById('lib-body').innerHTML = allLibrary.map(i => `<tr>
+    <td class="item-icon">${i.icon || i.category?.icon || ''}</td>
+    <td>${i.name}</td><td>${i.category?.icon || ''} ${i.category?.name || ''}</td>
+    <td>${i.default_quantity}</td><td>${i.unit}</td>
+    <td>${i.image_url ? `<img src="${i.image_url}" class="item-thumb" alt="">` : ''}</td>
+    <td>${i.notes || ''}</td>
+    <td>${i.translations?.da || ''}</td><td>${i.translations?.it || ''}</td><td>${i.translations?.bg || ''}</td>
+    <td><button class="btn-sm" onclick='editItem(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✎</button>
+    <button class="btn-sm btn-danger" onclick="delItem(${i.id})">✕</button></td>
+  </tr>`).join('');
+  updateSuggestions();
+}
+
+let pendingImageFile = null;
+
+function showItemModal(item = null) {
+  pendingImageFile = null;
+  const hasImg = item?.image_url;
+  modal(item ? 'Edit Item' : 'New Item', `
+    <div class="form-row">
+      <div style="flex:0 0 80px"><label>Icon</label><input id="m-icon" value="${item?.icon || ''}" style="font-size:1.5rem;text-align:center"></div>
+      <div><label>Name</label><input id="m-name" value="${item?.name || ''}"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Category</label><select id="m-cat">${allCategories.map(c =>
+        `<option value="${c.id}" ${item?.category_id===c.id?'selected':''}>${c.icon} ${c.name}</option>`).join('')}</select></div>
+      <div><label>Default Qty</label><input id="m-qty" type="number" step="any" value="${item?.default_quantity || 1}"></div>
+      <div><label>Unit</label><select id="m-unit">${['unit','pack','grams','kg','liters','ml','bottle','jar','can','bunch','piece']
+        .map(u => `<option ${item?.unit===u?'selected':''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row"><div><label>Notes</label><input id="m-notes" value="${item?.notes || ''}"></div></div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:.78rem;color:var(--muted);margin-bottom:3px;display:block">Image</label>
+      <div id="img-upload-zone" class="img-upload-zone ${hasImg ? 'has-image' : ''}" onclick="document.getElementById('m-img-file').click()">
+        ${hasImg ? `<img src="${item.image_url}" class="img-preview" alt=""><br>Click to replace` : 'Click to upload an image'}
+        <input type="file" id="m-img-file" accept="image/*" style="display:none" onchange="handleImageSelect(this)">
+      </div>
+      ${hasImg && item?.id ? `<button class="btn-sm btn-danger" style="margin-top:6px" onclick="removeImage(${item.id})">Remove image</button>` : ''}
+    </div>
+    <div class="form-row"><div><label>Danish</label><input id="m-da" value="${item?.translations?.da || ''}"></div>
+    <div><label>Italian</label><input id="m-it" value="${item?.translations?.it || ''}"></div>
+    <div><label>Bulgarian</label><input id="m-bg" value="${item?.translations?.bg || ''}"></div></div>
+  `, async () => {
+    const body = {name: gv('m-name'), icon: gv('m-icon') || null, category_id: +gv('m-cat'), default_quantity: +gv('m-qty'),
+      unit: gv('m-unit'), notes: gv('m-notes') || null,
+      translations: {da: gv('m-da'), it: gv('m-it'), bg: gv('m-bg')}};
+    const saved = await api(item ? `/library/${item.id}` : '/library', {method: item ? 'PUT' : 'POST', body: JSON.stringify(body)});
+    const itemId = item?.id || saved.id;
+    if (pendingImageFile) {
+      const fd = new FormData();
+      fd.append('file', pendingImageFile);
+      await fetch(`/api/library/${itemId}/image`, {method: 'POST', headers: {'X-API-Key': API_KEY}, body: fd});
+    }
+    closeModal(); toast('Saved'); loadLibrary();
+  });
+}
+
+function handleImageSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  pendingImageFile = file;
+  const zone = document.getElementById('img-upload-zone');
+  const reader = new FileReader();
+  reader.onload = e => {
+    zone.classList.add('has-image');
+    zone.innerHTML = `<img src="${e.target.result}" class="img-preview" alt=""><br>${file.name}<input type="file" id="m-img-file" accept="image/*" style="display:none" onchange="handleImageSelect(this)">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function removeImage(itemId) {
+  await fetch(`/api/library/${itemId}/image`, {method: 'DELETE', headers: {'X-API-Key': API_KEY}});
+  toast('Image removed'); closeModal(); loadLibrary();
+}
+
+function editItem(i) { showItemModal(i); }
+async function delItem(id) { if(!confirm('Delete?')) return; await api(`/library/${id}`,{method:'DELETE'}); loadLibrary(); }
+
+// ── Shopping List ──
+async function loadLists() {
+  const lists = await api('/lists');
+  const sel = document.getElementById('list-select');
+  sel.innerHTML = '<option value="">Select list…</option>' +
+    lists.map(l => `<option value="${l.id}">${l.name} (${l.item_count} items)</option>`).join('');
+  allSupermarkets = await api('/supermarkets');
+  const ss = document.getElementById('supermarket-select');
+  ss.innerHTML = '<option value="">Default order</option>' +
+    allSupermarkets.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  sel.onchange = () => loadShoppingList();
+  ss.onchange = () => loadShoppingList();
+  if (allLibrary.length === 0) allLibrary = await api('/library');
+  updateSuggestions();
+}
+
+function updateSuggestions() {
+  document.getElementById('lib-suggestions').innerHTML =
+    allLibrary.map(i => `<option value="${i.name}">`).join('');
+}
+
+async function loadShoppingList() {
+  const listId = document.getElementById('list-select').value;
+  if (!listId) { document.getElementById('shopping-content').innerHTML = ''; return; }
+  const superId = document.getElementById('supermarket-select').value;
+  let url = `/lists/${listId}`;
+  if (superId) url += `?supermarket_id=${superId}`;
+  const list = await api(url);
+
+  const pending = list.items.filter(i => i.status === 'pending');
+  const purchased = list.items.filter(i => i.status === 'purchased');
+
+  const grouped = {};
+  pending.forEach(i => {
+    const cat = i.library_item?.category?.name || 'Other';
+    const icon = i.library_item?.category?.icon || '📦';
+    const key = icon + ' ' + cat;
+    (grouped[key] = grouped[key] || []).push(i);
+  });
+
+  let html = '';
+  for (const [cat, items] of Object.entries(grouped)) {
+    html += `<div class="list-group"><h3>${cat}</h3>`;
+    items.forEach(i => {
+      const icon = i.library_item?.icon || '';
+      const thumb = i.library_item?.image_url ? `<img src="${i.library_item.image_url}" class="item-thumb" alt="">` : '';
+      const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
+      html += `<div class="list-item">
+        ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
+        <span class="qty">${i.quantity} ${i.unit}</span>
+        <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${expBadge}</span>
+        <span class="actions">
+          <button class="btn-sm" onclick="showExpModal(${listId},${i.id},'${i.expiration_date || ''}')" title="Set expiration">📅</button>
+          <button class="btn-sm" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
+          <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
+        </span></div>`;
+    });
+    html += '</div>';
+  }
+
+  if (purchased.length) {
+    html += `<div class="list-group"><h3>✅ Purchased</h3>`;
+    purchased.forEach(i => {
+      const icon = i.library_item?.icon || '';
+      const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
+      html += `<div class="list-item purchased">
+        ${icon ? `<span class="item-icon">${icon}</span>` : ''}
+        <span class="qty">${i.quantity} ${i.unit}</span>
+        <span class="name">${i.library_item?.name || '?'}${expBadge}</span>
+        <span class="actions">
+          <button class="btn-sm" onclick="showExpModal(${listId},${i.id},'${i.expiration_date || ''}')" title="Set expiration">📅</button>
+          <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})">✕</button>
+        </span></div>`;
+    });
+    html += '</div>';
+  }
+
+  if (!list.items.length) html = '<p style="color:var(--muted)">List is empty. Add items above.</p>';
+  document.getElementById('shopping-content').innerHTML = html;
+}
+
+function expiryClass(dateStr) {
+  if (!dateStr) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp = new Date(dateStr + 'T00:00:00');
+  const soon = new Date(today); soon.setDate(soon.getDate() + 3);
+  if (exp < today) return 'badge-pending';
+  if (exp <= soon) return 'badge-pending';
+  return 'badge-purchased';
+}
+
+function showExpModal(listId, itemId, currentDate) {
+  modal('Set Expiration Date', `
+    <div class="form-row"><div><label>Expiration date</label><input id="m-exp-date" type="date" value="${currentDate}"></div></div>
+  `, async () => {
+    const d = gv('m-exp-date') || null;
+    await api(`/lists/${listId}/items/${itemId}`, {method: 'PUT', body: JSON.stringify({expiration_date: d})});
+    closeModal(); toast('Expiration date saved'); loadShoppingList();
+  });
+}
+
+async function purchaseItem(listId, itemId) {
+  await api(`/lists/${listId}/items/${itemId}/purchase`, {method: 'PATCH'});
+  loadShoppingList();
+}
+
+async function removeItem(listId, itemId) {
+  await api(`/lists/${listId}/items/${itemId}`, {method: 'DELETE'});
+  loadShoppingList();
+}
+
+async function addItemByName() {
+  const name = document.getElementById('add-item-search').value.trim();
+  const listId = document.getElementById('list-select').value;
+  if (!name || !listId) { toast('Select a list and type an item name'); return; }
+  try {
+    await api(`/lists/${listId}/items/by-name?name=${encodeURIComponent(name)}`, {method: 'POST'});
+    document.getElementById('add-item-search').value = '';
+    toast('Added'); loadShoppingList();
+  } catch (e) { toast(e.message); }
+}
+
+function promptNewList() {
+  const name = prompt('List name:');
+  if (!name) return;
+  api('/lists', {method: 'POST', body: JSON.stringify({name})}).then(() => { toast('Created'); loadLists(); });
+}
+
+// ── Supermarkets ──
+async function loadSupermarkets() {
+  await loadCategories();
+  allSupermarkets = await api('/supermarkets');
+  document.getElementById('super-list').innerHTML = allSupermarkets.length
+    ? allSupermarkets.map(s => {
+      const cats = (s.category_order || []).map(id => {
+        const c = allCategories.find(x => x.id === id);
+        return c ? `${c.icon} ${c.name}` : `#${id}`;
+      }).join(' → ');
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
+        <strong>${s.name}</strong> <button class="btn-sm btn-danger" onclick="delSuper(${s.id})" style="float:right">✕</button>
+        <div style="color:var(--muted);font-size:.8rem;margin-top:4px">${cats || 'No category order set'}</div>
+      </div>`;
+    }).join('')
+    : '<p style="color:var(--muted)">No presets yet.</p>';
+}
+
+function showSuperModal() {
+  const catChecks = allCategories.map(c =>
+    `<label style="display:block;margin:3px 0"><input type="checkbox" value="${c.id}" class="super-cat-cb"> ${c.icon} ${c.name}</label>`
+  ).join('');
+  modal('New Supermarket Preset', `
+    <div class="form-row"><div><label>Name</label><input id="m-super-name"></div></div>
+    <div><label>Category order (check in aisle order):</label>${catChecks}</div>
+  `, async () => {
+    const order = [...document.querySelectorAll('.super-cat-cb:checked')].map(cb => +cb.value);
+    await api('/supermarkets', {method: 'POST', body: JSON.stringify({name: gv('m-super-name'), category_order: order})});
+    closeModal(); toast('Saved'); loadSupermarkets();
+  });
+}
+
+async function delSuper(id) { if(!confirm('Delete?')) return; await api(`/supermarkets/${id}`,{method:'DELETE'}); loadSupermarkets(); }
+
+// ── Reminders ──
+async function loadReminders() {
+  if (!allLibrary.length) allLibrary = await api('/library');
+  const rems = await api('/reminders');
+  document.getElementById('rem-body').innerHTML = rems.map(r => `<tr>
+    <td>${r.library_item?.name || r.library_item_id}</td>
+    <td>${r.interval_days}</td>
+    <td>${r.next_due ? new Date(r.next_due).toLocaleDateString() : '—'}</td>
+    <td>${r.active ? '✅' : '❌'}</td>
+    <td><button class="btn-sm btn-danger" onclick="delRem(${r.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+function showReminderModal() {
+  modal('New Reminder', `
+    <div class="form-row"><div><label>Item</label><select id="m-rem-item">${allLibrary.map(i =>
+      `<option value="${i.id}">${i.name}</option>`).join('')}</select></div>
+    <div><label>Every N days</label><input id="m-rem-days" type="number" value="7"></div></div>
+  `, async () => {
+    await api('/reminders', {method: 'POST', body: JSON.stringify({
+      library_item_id: +gv('m-rem-item'), interval_days: +gv('m-rem-days')})});
+    closeModal(); toast('Saved'); loadReminders();
+  });
+}
+
+async function delRem(id) { if(!confirm('Delete?')) return; await api(`/reminders/${id}`,{method:'DELETE'}); loadReminders(); }
+
+// ── Users ──
+async function loadUsers() {
+  const users = await api('/users');
+  document.getElementById('user-body').innerHTML = users.map(u => `<tr>
+    <td>${u.name}</td><td>${u.role}</td><td>${u.language}</td>
+    <td><code style="font-size:.7rem">${u.api_key}</code></td>
+    <td><button class="btn-sm btn-danger" onclick="delUser(${u.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+function showUserModal() {
+  modal('New User', `
+    <div class="form-row"><div><label>Name</label><input id="m-user-name"></div></div>
+    <div class="form-row">
+      <div><label>Role</label><select id="m-user-role"><option>user</option><option>admin</option></select></div>
+      <div><label>Language</label><select id="m-user-lang"><option value="en">English</option>
+        <option value="da">Danish</option><option value="it">Italian</option></select></div></div>
+  `, async () => {
+    await api('/users', {method: 'POST', body: JSON.stringify({
+      name: gv('m-user-name'), role: gv('m-user-role'), language: gv('m-user-lang')})});
+    closeModal(); toast('Saved'); loadUsers();
+  });
+}
+
+async function delUser(id) { if(!confirm('Delete?')) return; await api(`/users/${id}`,{method:'DELETE'}); loadUsers(); }
+
+// ── Calendar ──
+let calYear, calMonth;
+{
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth(); // 0-indexed
+}
+
+function calNav(delta) { calMonth += delta; if (calMonth < 0) { calMonth = 11; calYear--; } else if (calMonth > 11) { calMonth = 0; calYear++; } loadCalendar(); }
+function calGoToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); loadCalendar(); }
+
+async function loadCalendar() {
+  const items = await api(`/lists/expirations?month=${calMonth + 1}&year=${calYear}`);
+  const title = new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('cal-title').textContent = title;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const soonThreshold = new Date(today); soonThreshold.setDate(soonThreshold.getDate() + 3);
+
+  const byDate = {};
+  items.forEach(i => {
+    const d = i.expiration_date;
+    if (!d) return;
+    (byDate[d] = byDate[d] || []).push(i);
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0);
+  let startDow = firstDay.getDay();
+  if (startDow === 0) startDow = 7;
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - (startDow - 1));
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = days.map(d => `<div class="cal-header">${d}</div>`).join('');
+
+  const maxCells = 42;
+  const cur = new Date(startDate);
+  for (let c = 0; c < maxCells; c++) {
+    const iso = cur.toISOString().slice(0, 10);
+    const isThisMonth = cur.getMonth() === calMonth;
+    const isToday = cur.getTime() === today.getTime();
+    const classes = ['cal-cell'];
+    if (!isThisMonth) classes.push('other-month');
+    if (isToday) classes.push('today');
+
+    html += `<div class="${classes.join(' ')}"><div class="cal-day">${cur.getDate()}</div>`;
+
+    const dayItems = byDate[iso] || [];
+    const maxShow = 3;
+    dayItems.slice(0, maxShow).forEach(i => {
+      const expDate = new Date(i.expiration_date + 'T00:00:00');
+      let cls = 'ok';
+      if (expDate < today) cls = 'expired';
+      else if (expDate <= soonThreshold) cls = 'soon';
+      const icon = i.library_item?.icon || '';
+      const name = i.library_item?.name || '?';
+      html += `<div class="cal-item ${cls}" title="${name} — ${i.quantity} ${i.unit}${i.status === 'purchased' ? ' (purchased)' : ''}">${icon} ${name}</div>`;
+    });
+    if (dayItems.length > maxShow) {
+      html += `<div class="cal-more">+${dayItems.length - maxShow} more</div>`;
+    }
+
+    html += '</div>';
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+// ── Helpers ──
+function gv(id) { return document.getElementById(id).value; }
+
+// Init
+loadLists();
+</script>
+</body>
+</html>

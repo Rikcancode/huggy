@@ -1,0 +1,19 @@
+services:
+  grocery-list:
+    build: .
+    image: grocery-list:latest
+    container_name: grocery-list
+    restart: unless-stopped
+    ports:
+      - "8089:8089"
+    volumes:
+      - grocery-data:/data
+    environment:
+      - GROCERY_DATABASE_URL=sqlite:////data/grocery.db
+      - GROCERY_UPLOAD_DIR=/data/uploads
+      - GROCERY_ADMIN_API_KEY=grocery-admin-key-2026
+      - GROCERY_USER_API_KEY=grocery-user-key-2026
+      - GROCERY_SEED_ON_STARTUP=true
+
+volumes:
+  grocery-data:
