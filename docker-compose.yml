@@ -1,9 +1,41 @@
-# ZimaOS / CasaOS app store metadata (required for "Install from repo" in ZimaOS)
+name: huggy
+
+services:
+  huggy:
+    build: .
+    image: grocery-list:latest
+    container_name: huggy
+    ports:
+      - mode: ingress
+        target: 8089
+        published: "8089"
+        protocol: tcp
+    environment:
+      - GROCERY_DATABASE_URL=sqlite:////data/grocery.db
+      - GROCERY_UPLOAD_DIR=/data/uploads
+      - GROCERY_ADMIN_API_KEY=grocery-admin-key-2026
+      - GROCERY_USER_API_KEY=grocery-user-key-2026
+      - GROCERY_SEED_ON_STARTUP=true
+    volumes:
+      - type: bind
+        source: /DATA/AppData/huggy/data
+        target: /data
+        bind:
+          create_host_path: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8089/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: grocery-list
+    - arm
+  main: huggy
   author: Rikcancode
   category: Lifestyle
   description:
@@ -15,25 +47,15 @@ x-casaos:
     en_us: Grocery lists, item library, expiration tracking and reminders
   title:
     en_us: Huggy (Grocery List)
-  port_map: "8089"
+  tips:
+    before_install:
+      en_us: |
+        **Default configuration**
+        - Web UI port: 8089
+        - Data storage: `/DATA/AppData/huggy/data`
+        - Admin API key: `grocery-admin-key-2026`
+        - User API key: `grocery-user-key-2026`
+        Change keys in the compose environment or after install.
   index: /
-
-services:
-  grocery-list:
-    build: .
-    image: grocery-list:latest
-    container_name: grocery-list
-    restart: unless-stopped
-    ports:
-      - "8089:8089"
-    volumes:
-      - grocery-data:/data
-    environment:
-      - GROCERY_DATABASE_URL=sqlite:////data/grocery.db
-      - GROCERY_UPLOAD_DIR=/data/uploads
-      - GROCERY_ADMIN_API_KEY=grocery-admin-key-2026
-      - GROCERY_USER_API_KEY=grocery-user-key-2026
-      - GROCERY_SEED_ON_STARTUP=true
-
-volumes:
-  grocery-data:
+  port_map: "8089"
+  scheme: http
