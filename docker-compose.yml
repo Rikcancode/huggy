@@ -1,3 +1,23 @@
+# ZimaOS / CasaOS app store metadata (required for "Install from repo" in ZimaOS)
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: grocery-list
+  author: Rikcancode
+  category: Lifestyle
+  description:
+    en_us: |
+      Self-hosted grocery list manager. Shopping lists, item library with categories,
+      expiration calendar, repurchase reminders, supermarket aisle ordering. Web UI and API key auth.
+  developer: Rikcancode
+  tagline:
+    en_us: Grocery lists, item library, expiration tracking and reminders
+  title:
+    en_us: Huggy (Grocery List)
+  port_map: "8089"
+  index: /
+
 services:
   grocery-list:
     build: .

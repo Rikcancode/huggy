@@ -39,7 +39,7 @@ All settings are configured via environment variables (prefix `GROCERY_`):
 
 ## ZimaOS / CasaOS
 
-**Do you need a YAML that points to a GitHub repo?**  
+**Use `docker-compose.yml` only** — do not paste the separate zimaos-app.yaml file (it is not valid compose). **Do you need a YAML that points to a GitHub repo?**  
 Only if the store supports “Install from URL” or “Add from repository” and expects a manifest. Otherwise you don’t.
 
 **Option 1 — Paste compose (no repo required)**  
@@ -50,8 +50,8 @@ Only if the store supports “Install from URL” or “Add from repository” a
 **Option 2 — Install from GitHub**  
 1. Repo: **https://github.com/Rikcancode/huggy**  
 2. If the store has “Install from URL” or “Add from repository”, use that URL.  
-3. If it asks for a manifest URL, use: `https://raw.githubusercontent.com/Rikcancode/huggy/main/zimaos-app.yaml`  
-4. The store will use `docker-compose.yml` from the repo; `zimaos-app.yaml` is optional metadata for stores that support it.
+3. If it asks for a compose URL, use: `https://raw.githubusercontent.com/Rikcancode/huggy/main/docker-compose.yml`  
+4. The repo’s `docker-compose.yml` includes an `x-casaos` block so ZimaOS shows the app name and port correctly.
 
 ## API
 
