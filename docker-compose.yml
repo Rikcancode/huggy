@@ -2,7 +2,7 @@ name: huggy
 
 services:
   huggy:
-    image: docker.io/rikcancode/huggy:latest
+    image: docker.io/rikcodes/huggy:latest
     container_name: huggy
     ports:
       - mode: ingress

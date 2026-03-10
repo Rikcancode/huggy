@@ -42,7 +42,7 @@ All settings are configured via environment variables (prefix `GROCERY_`):
 **Use `docker-compose.yml` only** — do not paste the separate zimaos-app.yaml file (it is not valid compose). **Do you need a YAML that points to a GitHub repo?**  
 Only if the store supports “Install from URL” or “Add from repository” and expects a manifest. Otherwise you don’t.
 
-The compose uses the pre-built image `docker.io/rikcancode/huggy:latest`. ZimaOS cannot build from source. **One-time:** publish the image (from this repo, after `docker login`): `docker build -t docker.io/rikcancode/huggy:latest .` then `docker push docker.io/rikcancode/huggy:latest`. Use your Docker Hub username if not `rikcancode`.
+The compose uses `docker.io/rikcodes/huggy:latest`. The image is built and pushed by GitHub Actions on every push to `main` (requires repo secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`).
 
 **Install:** Apps → Install a customized app → paste `docker-compose.yml` (or use its raw URL). Data is stored in `/DATA/AppData/huggy/data`.
 
