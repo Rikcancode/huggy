@@ -4,9 +4,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import UserCreate, UserUpdate, UserOut
-from app.auth import require_admin
+from app.auth import require_admin, get_current_user
 
 router = APIRouter(prefix="/api/users", tags=["users"])
+
+
+@router.get("/me", response_model=UserOut)
+def get_current_user_info(user: User = Depends(get_current_user)):
+    """Return the authenticated user (for showing name in the UI)."""
+    return user
 
 
 @router.get("", response_model=list[UserOut])

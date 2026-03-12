@@ -34,11 +34,32 @@ nav button { padding: 8px 16px; border: 1px solid var(--border); border-radius: 
   background: var(--surface); color: var(--text); cursor: pointer; font-size: .9rem; }
 nav button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 nav button:hover:not(.active) { border-color: var(--accent); }
+
+/* Nav drawer overlay (mobile): does not push content */
+.nav-drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 140;
+  opacity: 0; transition: opacity .2s ease; }
+.nav-drawer-backdrop.open { display: block; opacity: 1; }
+.nav-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(280px, 85vw); max-width: 280px;
+  background: var(--surface); border-left: 1px solid var(--border); z-index: 141;
+  display: flex; flex-direction: column; box-shadow: -4px 0 20px rgba(0,0,0,.3);
+  transform: translateX(100%); transition: transform .25s ease;
+  padding-top: env(safe-area-inset-top); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
+.nav-drawer.open { transform: translateX(0); }
+.nav-drawer-user { padding: 16px 20px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: .9rem; }
+.nav-drawer-user strong { color: var(--text); display: block; font-size: 1rem; margin-bottom: 2px; }
+.nav-drawer nav { flex: 1; flex-direction: column; gap: 0; padding: 12px 0; overflow-y: auto; }
+.nav-drawer nav button { width: 100%; text-align: left; padding: 14px 20px; border-radius: 0; border-left: 3px solid transparent; }
+.nav-drawer nav button.active { border-left-color: var(--accent); }
+
 @media (max-width: 768px) {
   .nav-toggle { display: block; }
-  nav { display: none; width: 100%; flex-direction: column; margin-top: 8px; }
-  nav.open { display: flex; }
-  nav button { width: 100%; text-align: left; }
+  .nav-wrap nav.desktop-nav { display: none !important; }
+  .nav-drawer-backdrop { display: block; pointer-events: none; }
+  .nav-drawer-backdrop.open { pointer-events: auto; }
+}
+@media (min-width: 769px) {
+  .nav-drawer-backdrop { display: none !important; }
+  .nav-drawer { display: none !important; }
 }
 
 .panel { display: none; }
@@ -127,6 +148,39 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: var(--radius);
   background: var(--green); color: #000; font-weight: 600; z-index: 200; animation: fadeout 3s forwards; }
 @keyframes fadeout { 0%,70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Add-items overlay (mobile-first) */
+.add-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 150; display: flex; flex-direction: column;
+  max-height: 100vh; max-height: 100dvh; }
+.add-overlay-header { flex-shrink: 0; padding: 12px 16px; padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--surface); }
+.add-overlay-title { font-family: 'Fredoka', sans-serif; font-size: 1.25rem; flex: 1; }
+.add-overlay-close { padding: 10px 16px; min-height: 44px; min-width: 44px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; font-size: 1rem; }
+.add-overlay-search-wrap { flex-shrink: 0; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.add-overlay-search { width: 100%; padding: 12px 16px; font-size: 16px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.add-overlay-search::placeholder { color: var(--muted); }
+.add-overlay-search:focus { outline: none; border-color: var(--accent); }
+.add-overlay-list { flex: 1; overflow-y: auto; padding: 8px 16px 24px; -webkit-overflow-scrolling: touch;
+  padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.add-overlay-item { display: flex; align-items: center; gap: 12px; padding: 14px 12px; min-height: 56px;
+  border-radius: var(--radius); margin-bottom: 6px; background: var(--surface); border: 1px solid var(--border);
+  transition: background .15s; }
+.add-overlay-item:active { background: var(--border); }
+.add-overlay-item.added { opacity: 0.7; }
+.add-overlay-item .item-icon { font-size: 1.5rem; width: 36px; text-align: center; flex-shrink: 0; }
+.add-overlay-item .item-info { flex: 1; min-width: 0; }
+.add-overlay-item .item-name { font-weight: 500; display: block; }
+.add-overlay-item .item-meta { font-size: .8rem; color: var(--muted); }
+.add-overlay-item .item-action { flex-shrink: 0; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.add-overlay-item .btn-add { padding: 10px 18px; border-radius: var(--radius); background: var(--accent); border: none;
+  color: #fff; font-weight: 600; cursor: pointer; font-size: .9rem; }
+.add-overlay-item .btn-add:active { opacity: .9; }
+.add-overlay-item .badge-added { padding: 8px 14px; border-radius: var(--radius); background: var(--green); color: #000;
+  font-size: .85rem; font-weight: 600; }
+.add-overlay-empty { padding: 24px 16px; text-align: center; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -153,7 +207,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   <h2>Admin Panel</h2>
 
   <div class="nav-wrap">
-    <nav id="tabs">
+    <nav id="tabs" class="desktop-nav">
       <button data-tab="shopping" class="active">Shopping List</button>
       <button data-tab="recent">Recent Purchases</button>
       <button data-tab="calendar">Calendar</button>
@@ -165,6 +219,25 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
     </nav>
   </div>
 
+  <!-- Mobile nav drawer (overlay, does not push content) -->
+  <div class="nav-drawer-backdrop" id="nav-drawer-backdrop" aria-hidden="true"></div>
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+    <div class="nav-drawer-user" id="nav-drawer-user">
+      <strong id="nav-drawer-username">—</strong>
+      <span>Logged in</span>
+    </div>
+    <nav id="nav-drawer-tabs">
+      <button data-tab="shopping" type="button">Shopping List</button>
+      <button data-tab="recent" type="button">Recent Purchases</button>
+      <button data-tab="calendar" type="button">Calendar</button>
+      <button data-tab="library" type="button">Library</button>
+      <button data-tab="categories" type="button">Categories</button>
+      <button data-tab="supermarkets" type="button">Supermarkets</button>
+      <button data-tab="reminders" type="button">Reminders</button>
+      <button data-tab="users" type="button">Users</button>
+    </nav>
+  </div>
+
   <!-- SHOPPING LIST -->
   <div id="panel-shopping" class="panel active">
     <div class="toolbar">
@@ -173,10 +246,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
       <button class="btn-primary btn-sm" onclick="promptNewList()">+ New List</button>
     </div>
     <div class="toolbar">
-      <input id="add-item-search" placeholder="Type any item name (new items are added to Library)…" list="lib-suggestions">
-      <datalist id="lib-suggestions"></datalist>
-      <button class="btn-primary btn-sm" onclick="addItemByName()">Add</button>
+      <button type="button" class="btn-primary" id="btn-open-add-overlay" style="min-height:44px;padding:10px 20px">+ Add items</button>
     </div>
+    <datalist id="lib-suggestions"></datalist>
     <div id="shopping-content"></div>
   </div>
 
@@ -260,6 +332,18 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 <div id="modal-container"></div>
 <div id="toast-container"></div>
 
+<!-- Add-items overlay (mobile-first): sticky search, filterable list, added state -->
+<div id="add-items-overlay" class="add-overlay" style="display:none" aria-hidden="true">
+  <div class="add-overlay-header">
+    <span class="add-overlay-title">Add items</span>
+    <button type="button" class="add-overlay-close" id="add-overlay-close" aria-label="Close">✕</button>
+  </div>
+  <div class="add-overlay-search-wrap">
+    <input type="search" class="add-overlay-search" id="add-overlay-search" placeholder="Search items…" autocomplete="off" aria-label="Search items to add">
+  </div>
+  <div class="add-overlay-list" id="add-overlay-list"></div>
+</div>
+
 <script>
 const API_KEY = localStorage.getItem('grocery_api_key') || prompt('Enter your API key:');
 if (API_KEY) localStorage.setItem('grocery_api_key', API_KEY);
@@ -295,29 +379,59 @@ function modal(title, body, onSave) {
   document.getElementById('modal-save').onclick = onSave;
 }
 
-// ── Nav accordion (mobile) ──
-document.getElementById('nav-toggle').addEventListener('click', () => {
-  const nav = document.getElementById('tabs');
-  const toggle = document.getElementById('nav-toggle');
-  nav.classList.toggle('open');
-  toggle.setAttribute('aria-expanded', nav.classList.contains('open'));
-  toggle.textContent = nav.classList.contains('open') ? '✕ Close' : '☰ Menu';
-});
-
-// ── Tabs ──
-document.getElementById('tabs').addEventListener('click', e => {
-  if (e.target.tagName !== 'BUTTON') return;
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  e.target.classList.add('active');
-  document.getElementById('panel-' + e.target.dataset.tab).classList.add('active');
-  document.getElementById('tabs').classList.remove('open');
+// ── Nav drawer (mobile overlay: does not push content) ──
+function openNavDrawer() {
+  document.getElementById('nav-drawer-backdrop').classList.add('open');
+  document.getElementById('nav-drawer').classList.add('open');
+  document.getElementById('nav-drawer-backdrop').setAttribute('aria-hidden', 'false');
+  document.getElementById('nav-drawer').setAttribute('aria-hidden', 'false');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+}
+function closeNavDrawer() {
+  document.getElementById('nav-drawer-backdrop').classList.remove('open');
+  document.getElementById('nav-drawer').classList.remove('open');
+  document.getElementById('nav-drawer-backdrop').setAttribute('aria-hidden', 'true');
+  document.getElementById('nav-drawer').setAttribute('aria-hidden', 'true');
   document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
-  document.getElementById('nav-toggle').textContent = '☰ Menu';
+  document.body.style.overflow = '';
+}
+function syncDrawerActiveTab(tabId) {
+  document.querySelectorAll('#tabs button, #nav-drawer-tabs button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tabId);
+  });
+}
+
+document.getElementById('nav-toggle').addEventListener('click', () => {
+  if (document.getElementById('nav-drawer').classList.contains('open')) closeNavDrawer();
+  else openNavDrawer();
+});
+document.getElementById('nav-drawer-backdrop').addEventListener('click', closeNavDrawer);
+
+// ── Tabs (desktop nav + drawer nav) ──
+document.addEventListener('click', e => {
+  const btn = e.target.closest('nav button[data-tab]');
+  if (!btn) return;
+  const tabId = btn.dataset.tab;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tabId).classList.add('active');
+  syncDrawerActiveTab(tabId);
+  closeNavDrawer();
   const loaders = {library: loadLibrary, categories: loadCategories, supermarkets: loadSupermarkets,
     reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases};
-  loaders[e.target.dataset.tab]?.();
+  loaders[tabId]?.();
 });
+
+// ── Current user for drawer ──
+let currentUserName = null;
+async function loadCurrentUser() {
+  try {
+    const u = await api('/users/me');
+    currentUserName = u?.name || null;
+    const el = document.getElementById('nav-drawer-username');
+    if (el) el.textContent = currentUserName || '—';
+  } catch (_) {}
+}
 
 // ── Categories ──
 async function loadCategories() {
@@ -463,6 +577,128 @@ function updateSuggestions() {
   document.getElementById('lib-suggestions').innerHTML =
     allLibrary.map(i => `<option value="${i.name}">`).join('');
 }
+
+// ── Add-items overlay (mobile-first) ──
+let addOverlayListId = null;
+let addOverlayAddedIds = new Set();
+
+function openAddItemsOverlay() {
+  const listId = document.getElementById('list-select').value;
+  if (!listId) { toast('Select a list first'); return; }
+  addOverlayListId = listId;
+  (async () => {
+    if (allLibrary.length === 0) allLibrary = await api('/library');
+    const list = await api(`/lists/${listId}`);
+    addOverlayAddedIds = new Set(list.items.map(i => i.library_item_id));
+    document.getElementById('add-items-overlay').style.display = 'flex';
+    document.getElementById('add-items-overlay').setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    renderAddItemsList('');
+    document.getElementById('add-overlay-search').value = '';
+    document.getElementById('add-overlay-search').focus();
+  })();
+}
+
+function closeAddItemsOverlay() {
+  document.getElementById('add-items-overlay').style.display = 'none';
+  document.getElementById('add-items-overlay').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  addOverlayListId = null;
+  loadShoppingList();
+}
+
+function renderAddItemsList(searchStr) {
+  const q = (searchStr || '').trim().toLowerCase();
+  let items = allLibrary.filter(i => !q || i.name.toLowerCase().includes(q));
+  items.sort((a, b) => {
+    const catA = a.category?.name || '';
+    const catB = b.category?.name || '';
+    return catA.localeCompare(catB) || a.name.localeCompare(b.name);
+  });
+  const listEl = document.getElementById('add-overlay-list');
+  if (items.length === 0) {
+    if (q) {
+      const safeAttr = searchStr.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      listEl.innerHTML = `<div class="add-overlay-empty">No items match "${escapeHtml(searchStr)}".</div>
+        <div class="add-overlay-item"><div class="item-info"><span class="item-name">Add "${escapeHtml(searchStr)}" as new item</span></div>
+        <span class="item-action"><button type="button" class="btn-add" data-add-by-name="${safeAttr}">Add</button></span></div>`;
+      listEl.querySelector('[data-add-by-name]')?.addEventListener('click', function() {
+        addItemByNameFromOverlay(this.getAttribute('data-add-by-name') || '');
+      });
+    } else {
+      listEl.innerHTML = '<div class="add-overlay-empty">No library items. Add items in the Library tab first.</div>';
+    }
+    return;
+  }
+  listEl.innerHTML = items.map(i => {
+    const added = addOverlayAddedIds.has(i.id);
+    const cat = `${i.category?.icon || ''} ${i.category?.name || 'Other'}`.trim();
+    if (added) {
+      return `<div class="add-overlay-item added">
+        <span class="item-icon">${i.icon || i.category?.icon || '📦'}</span>
+        <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)}</span></div>
+        <span class="item-action"><span class="badge-added">Added</span></span></div>`;
+    }
+    return `<div class="add-overlay-item">
+      <span class="item-icon">${i.icon || i.category?.icon || '📦'}</span>
+      <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)} · ${i.default_quantity} ${i.unit}</span></div>
+      <span class="item-action"><button type="button" class="btn-add" data-library-id="${i.id}" data-name="${escapeHtml(i.name).replace(/"/g, '&quot;')}">Add</button></span></div>`;
+  }).join('');
+  listEl.querySelectorAll('.btn-add[data-library-id]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      addItemFromOverlay(parseInt(this.getAttribute('data-library-id'), 10));
+    });
+  });
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+async function addItemFromOverlay(libraryItemId) {
+  if (!addOverlayListId) return;
+  const item = allLibrary.find(i => i.id === libraryItemId);
+  if (!item) return;
+  try {
+    await api(`/lists/${addOverlayListId}/items/by-name?name=${encodeURIComponent(item.name)}`, { method: 'POST' });
+    addOverlayAddedIds.add(libraryItemId);
+    renderAddItemsList(document.getElementById('add-overlay-search').value);
+    loadShoppingList();
+    toast('Added');
+  } catch (e) { toast(e.message); }
+}
+
+async function addItemByNameFromOverlay(name) {
+  if (!addOverlayListId || !name) return;
+  try {
+    const added = await api(`/lists/${addOverlayListId}/items/by-name?name=${encodeURIComponent(name)}`, { method: 'POST' });
+    if (added?.library_item) {
+      addOverlayAddedIds.add(added.library_item.id);
+      if (!allLibrary.find(i => i.id === added.library_item.id)) allLibrary.push(added.library_item);
+    }
+    renderAddItemsList(document.getElementById('add-overlay-search').value);
+    loadShoppingList();
+    toast('Added');
+  } catch (e) { toast(e.message); }
+}
+
+document.getElementById('btn-open-add-overlay').addEventListener('click', openAddItemsOverlay);
+document.getElementById('add-overlay-close').addEventListener('click', closeAddItemsOverlay);
+document.getElementById('add-overlay-search').addEventListener('input', function() {
+  renderAddItemsList(this.value);
+});
+document.getElementById('add-overlay-search').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { this.value = ''; renderAddItemsList(''); this.blur(); }
+});
+document.getElementById('add-items-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAddItemsOverlay();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('add-items-overlay').style.display === 'flex')
+    closeAddItemsOverlay();
+});
 
 async function loadShoppingList() {
   const listId = document.getElementById('list-select').value;
@@ -789,7 +1025,9 @@ async function loadCalendar() {
 function gv(id) { return document.getElementById(id).value; }
 
 // Init
+syncDrawerActiveTab('shopping');
 loadLists();
+loadCurrentUser();
 </script>
 </body>
 </html>

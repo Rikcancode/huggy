@@ -67,6 +67,27 @@ Key endpoints:
 - `POST /api/library/{id}/image` — upload image for an item
 - `GET /api/reminders/due` — check due reminders
 
+### OpenClaw / automation
+
+The API works with OpenClaw or any HTTP client. All requests that change data require the **`X-API-Key`** header (user or admin key).
+
+| What you want to do | Endpoint | Auth |
+|---------------------|----------|------|
+| **See lists** | `GET /api/lists` | None |
+| **See what’s on a list** | `GET /api/lists/{id}` | None |
+| **Add item by name** | `POST /api/lists/{id}/items/by-name?name=Bananas` | Required |
+| **Create a list** | `POST /api/lists` body `{"name":"Grocery"}` | Required |
+| **Mark item purchased** | `PATCH /api/lists/{id}/items/{item_id}/purchase` | Required |
+| **Remove item** | `DELETE /api/lists/{id}/items/{item_id}` | Required |
+| **Update item (qty, unit)** | `PUT /api/lists/{id}/items/{item_id}` body `{"quantity":2,"unit":"kg"}` | Required |
+
+Example (add to list 1, user key):
+
+```bash
+curl -X POST "http://localhost:8089/api/lists/1/items/by-name?name=Milk" \
+  -H "X-API-Key: grocery-user-key-2026"
+```
+
 ## Tech Stack
 
 - **Backend:** Python, FastAPI, SQLAlchemy, Uvicorn
