@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
+from app.routers.auth import hash_password
 from app.schemas import UserCreate, UserUpdate, UserOut
 from app.auth import require_admin, get_current_user
 
@@ -28,6 +29,8 @@ def create_user(data: UserCreate, admin: User = Depends(require_admin), db: Sess
         language=data.language,
         api_key=secrets.token_urlsafe(32),
     )
+    if data.password:
+        user.password_hash = hash_password(data.password)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -39,8 +42,12 @@ def update_user(user_id: int, data: UserUpdate, admin: User = Depends(require_ad
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(404, "User not found")
-    for k, v in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    password = payload.pop("password", None)
+    for k, v in payload.items():
         setattr(user, k, v)
+    if password:
+        user.password_hash = hash_password(password)
     db.commit()
     db.refresh(user)
     return user

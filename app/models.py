@@ -31,6 +31,8 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     api_key = Column(String(128), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
     role = Column(String(20), nullable=False, default="user")  # admin | user
     language = Column(String(5), nullable=False, default="en")
     created_at = Column(DateTime, default=datetime.utcnow)

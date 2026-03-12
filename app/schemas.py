@@ -202,12 +202,14 @@ class UserCreate(BaseModel):
     name: str
     role: str = "user"
     language: str = "en"
+    password: str | None = None
 
 
 class UserUpdate(BaseModel):
     name: str | None = None
     role: str | None = None
     language: str | None = None
+    password: str | None = None
 
 
 class UserOut(BaseModel):
@@ -218,3 +220,8 @@ class UserOut(BaseModel):
     language: str
     created_at: datetime
     model_config = {"from_attributes": True}
+
+
+class UserLogin(BaseModel):
+    name: str
+    password: str

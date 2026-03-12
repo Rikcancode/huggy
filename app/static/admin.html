@@ -184,7 +184,23 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 </style>
 </head>
 <body>
-<div class="app">
+<div id="login-screen" style="max-width:400px;margin:40px auto;padding:24px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:none">
+  <h1 style="font-family:'Fredoka',sans-serif;font-size:1.6rem;margin-bottom:12px">Mechou login</h1>
+  <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">Sign in with your Mechou user name and password.</p>
+  <div class="form-row"><div>
+    <label>Name</label>
+    <input id="login-name" autocomplete="username">
+  </div></div>
+  <div class="form-row"><div>
+    <label>Password</label>
+    <input id="login-pass" type="password" autocomplete="current-password">
+  </div></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+    <button class="btn-primary" id="login-submit">Sign in</button>
+  </div>
+</div>
+
+<div class="app" id="app-root" style="display:none">
   <div class="app-topbar">
     <header class="app-header">
       <div class="app-logo">
@@ -345,14 +361,12 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 </div>
 
 <script>
-const API_KEY = localStorage.getItem('grocery_api_key') || prompt('Enter your API key:');
-if (API_KEY) localStorage.setItem('grocery_api_key', API_KEY);
-const H = {'X-API-Key': API_KEY, 'Content-Type': 'application/json'};
+const H = {'Content-Type': 'application/json'};
 
 let allCategories = [], allLibrary = [], allSupermarkets = [];
 
 async function api(path, opts = {}) {
-  const r = await fetch('/api' + path, {headers: H, ...opts});
+  const r = await fetch('/api' + path, {headers: H, credentials: 'include', ...opts});
   if (r.status === 204) return null;
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || r.statusText); }
   return r.json();
@@ -362,6 +376,44 @@ function toast(msg) {
   const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg;
   document.getElementById('toast-container').appendChild(d);
   setTimeout(() => d.remove(), 3100);
+}
+
+async function ensureLoggedIn() {
+  try {
+    await api('/users/me');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display = 'block';
+    return true;
+  } catch (e) {
+    document.getElementById('app-root').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+    return false;
+  }
+}
+
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const password = document.getElementById('login-pass').value;
+  if (!name || !password) { toast('Enter name and password'); return; }
+  try {
+    const r = await fetch('/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({name, password}),
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.detail || 'Login failed');
+    }
+    document.getElementById('login-pass').value = '';
+    toast('Signed in');
+    await ensureLoggedIn();
+    loadCurrentUser();
+    loadLists();
+  } catch (e) {
+    toast(e.message || 'Login failed');
+  }
 }
 
 function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
@@ -1025,9 +1077,19 @@ async function loadCalendar() {
 function gv(id) { return document.getElementById(id).value; }
 
 // Init
-syncDrawerActiveTab('shopping');
-loadLists();
-loadCurrentUser();
+document.getElementById('login-submit').addEventListener('click', doLogin);
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+(async () => {
+  const ok = await ensureLoggedIn();
+  if (ok) {
+    syncDrawerActiveTab('shopping');
+    loadCurrentUser();
+    loadLists();
+  }
+})();
 </script>
 </body>
 </html>
