@@ -7,14 +7,14 @@
 # add this app via "Install from URL" or "Add from repository" using the repo URL or
 # the raw URL to this file.
 
-name: Grocery List
+name: Mechou
 tagline: Self-hosted grocery lists, item library, expiration calendar, repurchase reminders
 description: |
   Manage shopping lists, an item library with categories, expiration tracking,
   repurchase reminders, and supermarket aisle ordering. Web UI, API key auth,
   SQLite or PostgreSQL.
 category: productivity
-# icon: optional — add icon.png to repo and set URL, or leave unset
+icon: https://raw.githubusercontent.com/Rikcancode/huggy/main/app/static/icon.svg
 type: docker-compose
 
 repository: https://github.com/Rikcancode/huggy

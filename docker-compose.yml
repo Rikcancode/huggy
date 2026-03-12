@@ -37,6 +37,7 @@ x-casaos:
   main: huggy
   author: Rikcancode
   category: Lifestyle
+  icon: https://raw.githubusercontent.com/Rikcancode/huggy/main/app/static/icon.svg
   description:
     en_us: |
       Self-hosted grocery list manager. Shopping lists, item library with categories,
