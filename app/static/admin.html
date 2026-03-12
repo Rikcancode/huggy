@@ -178,6 +178,33 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .add-overlay-item .btn-add { padding: 10px 18px; border-radius: var(--radius); background: var(--accent); border: none;
   color: #fff; font-weight: 600; cursor: pointer; font-size: .9rem; }
 .add-overlay-item .btn-add:active { opacity: .9; }
+.add-overlay-qty { display: flex; gap: 4px; align-items: center; }
+.add-overlay-qty .add-qty-wrap { display: flex; align-items: center; }
+.add-overlay-qty .add-qty-minus, .add-overlay-qty .add-qty-plus {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 6px;
+  background: var(--bg-2, #f0f0f0);
+  color: var(--accent, #7b61ff);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.add-overlay-qty .add-qty-minus:hover, .add-overlay-qty .add-qty-plus:hover {
+  background: var(--bg-3, #e0e0e0);
+  color: var(--accent, #7b61ff);
+}
+.add-overlay-qty input, .add-overlay-qty select { width: 64px; padding: 6px 8px; font-size: .8rem; }
+.add-overlay-qty .add-qty { width: 48px; text-align: center; }
+.add-overlay-qty .add-unit { width: 82px; }
 .add-overlay-item .badge-added { padding: 8px 14px; border-radius: var(--radius); background: var(--green); color: #000;
   font-size: .85rem; font-weight: 600; }
 .add-overlay-empty { padding: 24px 16px; text-align: center; color: var(--muted); }
@@ -362,6 +389,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 <script>
 const H = {'Content-Type': 'application/json'};
+const UNITS = ['unit','pack','grams','kg','liters','ml','bottle','jar','can','bunch','piece'];
+const UNIT_STEP = { unit: 1, pack: 1, grams: 50, kg: 0.5, liters: 0.5, ml: 100, bottle: 1, jar: 1, can: 1, bunch: 1, piece: 1 };
 
 let allCategories = [], allLibrary = [], allSupermarkets = [];
 
@@ -693,12 +722,52 @@ function renderAddItemsList(searchStr) {
     }
     return `<div class="add-overlay-item">
       <span class="item-icon">${i.icon || i.category?.icon || '📦'}</span>
-      <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)} · ${i.default_quantity} ${i.unit}</span></div>
-      <span class="item-action"><button type="button" class="btn-add" data-library-id="${i.id}" data-name="${escapeHtml(i.name).replace(/"/g, '&quot;')}">Add</button></span></div>`;
+      <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)}</span></div>
+      <span class="item-action">
+        <div class="add-overlay-qty">
+          <div class="add-qty-wrap">
+            <button type="button" class="add-qty-minus" data-lib-id="${i.id}" aria-label="Decrease">−</button>
+            <input type="number" min="0.01" step="any" class="add-qty" value="${i.default_quantity}" data-lib-id="${i.id}">
+            <button type="button" class="add-qty-plus" data-lib-id="${i.id}" aria-label="Increase">+</button>
+          </div>
+          <select class="add-unit" data-lib-id="${i.id}">
+            ${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+          <button type="button" class="btn-add" data-library-id="${i.id}" data-name="${escapeHtml(i.name).replace(/"/g, '&quot;')}">Add</button>
+        </div>
+      </span></div>`;
   }).join('');
+  function applyQtyStep(row, delta) {
+    const qtyInput = row?.querySelector('.add-qty');
+    const unitSelect = row?.querySelector('.add-unit');
+    if (!qtyInput || !unitSelect) return;
+    const step = UNIT_STEP[unitSelect.value] ?? 1;
+    const min = 0.01;
+    let val = parseFloat(qtyInput.value);
+    if (Number.isNaN(val)) val = min;
+    val = Math.max(min, val + delta * step);
+    val = Math.round(val * 100) / 100;
+    qtyInput.value = val;
+  }
+  listEl.querySelectorAll('.add-qty-minus').forEach(btn => {
+    btn.addEventListener('click', function() {
+      applyQtyStep(this.closest('.add-overlay-item'), -1);
+    });
+  });
+  listEl.querySelectorAll('.add-qty-plus').forEach(btn => {
+    btn.addEventListener('click', function() {
+      applyQtyStep(this.closest('.add-overlay-item'), 1);
+    });
+  });
   listEl.querySelectorAll('.btn-add[data-library-id]').forEach(btn => {
     btn.addEventListener('click', function() {
-      addItemFromOverlay(parseInt(this.getAttribute('data-library-id'), 10));
+      const libId = parseInt(this.getAttribute('data-library-id'), 10);
+      const row = this.closest('.add-overlay-item');
+      const qtyInput = row?.querySelector('.add-qty');
+      const unitSelect = row?.querySelector('.add-unit');
+      const qty = qtyInput ? parseFloat(qtyInput.value) || undefined : undefined;
+      const unit = unitSelect ? unitSelect.value : undefined;
+      addItemFromOverlay(libId, qty, unit);
     });
   });
 }
@@ -709,12 +778,15 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
-async function addItemFromOverlay(libraryItemId) {
+async function addItemFromOverlay(libraryItemId, quantity, unit) {
   if (!addOverlayListId) return;
   const item = allLibrary.find(i => i.id === libraryItemId);
   if (!item) return;
   try {
-    await api(`/lists/${addOverlayListId}/items/by-name?name=${encodeURIComponent(item.name)}`, { method: 'POST' });
+    const body = { library_item_id: libraryItemId };
+    if (typeof quantity === 'number' && !Number.isNaN(quantity)) body.quantity = quantity;
+    if (unit) body.unit = unit;
+    await api(`/lists/${addOverlayListId}/items`, { method: 'POST', body: JSON.stringify(body) });
     addOverlayAddedIds.add(libraryItemId);
     renderAddItemsList(document.getElementById('add-overlay-search').value);
     loadShoppingList();
@@ -762,7 +834,6 @@ async function loadShoppingList() {
 
   const pending = list.items.filter(i => i.status === 'pending');
   const purchased = list.items.filter(i => i.status === 'purchased');
-  const units = ['unit','pack','grams','kg','liters','ml','bottle','jar','can','bunch','piece'];
   const createdBy = list.created_by ? `<p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">List created by ${list.created_by.name}</p>` : '';
 
   const grouped = {};
