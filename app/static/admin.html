@@ -855,7 +855,7 @@ async function loadShoppingList() {
         ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
         <span class="qty-edit">
           <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}" style="width:56px;padding:4px 6px">
-          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}" style="width:72px;padding:4px 6px">${units.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}" style="width:72px;padding:4px 6px">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
         </span>
         <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${addedBy}</span>
         <span class="actions">
