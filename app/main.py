@@ -4,15 +4,28 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 
+from sqlalchemy import text
 from app.database import engine, SessionLocal, Base
 from app.config import settings
 from app.seed import seed_database
 from app.routers import categories, library, lists, supermarkets, reminders, users
 
 
+def _run_migrations():
+    """Add new columns to existing DBs (created_by_id on lists and library_items)."""
+    with engine.connect() as conn:
+        if engine.url.drivername == "sqlite":
+            for table, col in [("grocery_lists", "created_by_id"), ("library_items", "created_by_id")]:
+                r = conn.execute(text(f"PRAGMA table_info({table})"))
+                if not any(row[1] == col for row in r):
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} INTEGER"))
+                    conn.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
     if settings.seed_on_startup:
         db = SessionLocal()
         try:

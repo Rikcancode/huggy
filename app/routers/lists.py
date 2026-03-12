@@ -8,12 +8,44 @@ from app.models import (
 )
 from app.schemas import (
     GroceryListCreate, GroceryListUpdate, GroceryListOut,
-    GroceryListSummary, GroceryListItemOut,
+    GroceryListSummary, GroceryListItemOut, RecentPurchaseOut,
     AddItemToList, UpdateListItem,
 )
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/lists", tags=["lists"])
+
+
+@router.get("/recent-purchases", response_model=list[RecentPurchaseOut])
+def get_recent_purchases(
+    list_id: int | None = Query(None, description="Filter by list"),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    """Return purchased items, most recent first. Used for Recent Purchases tab; expiration can be set here."""
+    q = (
+        db.query(GroceryListItem)
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
+        .join(GroceryList)
+        .filter(GroceryListItem.status == "purchased")
+    )
+    if list_id:
+        q = q.filter(GroceryListItem.list_id == list_id)
+    items = q.order_by(GroceryListItem.purchased_at.desc()).limit(limit).all()
+    result = []
+    for it in items:
+        result.append(
+            RecentPurchaseOut(
+                list_id=it.list_id,
+                list_name=it.grocery_list.name,
+                item=it,
+            )
+        )
+    return result
 
 
 @router.get("/expirations", response_model=list[GroceryListItemOut])
@@ -26,7 +58,11 @@ def get_expirations(
     from datetime import date as date_cls
     q = (
         db.query(GroceryListItem)
-        .options(joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category))
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
         .filter(GroceryListItem.expiration_date.isnot(None))
     )
     if month and year:
@@ -41,7 +77,7 @@ def get_expirations(
 
 @router.get("", response_model=list[GroceryListSummary])
 def list_all(active_only: bool = False, db: Session = Depends(get_db)):
-    q = db.query(GroceryList)
+    q = db.query(GroceryList).options(joinedload(GroceryList.created_by))
     if active_only:
         q = q.filter(GroceryList.is_active.is_(True))
     lists = q.order_by(GroceryList.updated_at.desc()).all()
@@ -56,7 +92,7 @@ def list_all(active_only: bool = False, db: Session = Depends(get_db)):
 
 @router.post("", response_model=GroceryListOut, status_code=201)
 def create_list(data: GroceryListCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    gl = GroceryList(name=data.name)
+    gl = GroceryList(name=data.name, created_by_id=user.id)
     db.add(gl)
     db.commit()
     db.refresh(gl)
@@ -72,9 +108,10 @@ def get_list(
     gl = (
         db.query(GroceryList)
         .options(
-            joinedload(GroceryList.items)
-            .joinedload(GroceryListItem.library_item)
-            .joinedload(LibraryItem.category)
+            joinedload(GroceryList.created_by),
+            joinedload(GroceryList.items).joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryList.items).joinedload(GroceryListItem.added_by),
+            joinedload(GroceryList.items).joinedload(GroceryListItem.purchased_by),
         )
         .get(list_id)
     )
@@ -133,6 +170,11 @@ def add_item(list_id: int, data: AddItemToList, user: User = Depends(get_current
 
     existing = (
         db.query(GroceryListItem)
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
         .filter_by(list_id=list_id, library_item_id=data.library_item_id)
         .first()
     )
@@ -159,6 +201,16 @@ def add_item(list_id: int, data: AddItemToList, user: User = Depends(get_current
     db.add(item)
     db.commit()
     db.refresh(item)
+    # Reload with relationships for response
+    item = (
+        db.query(GroceryListItem)
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
+        .get(item.id)
+    )
     return item
 
 
@@ -170,14 +222,36 @@ def add_item_by_name(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Add an item by name (fuzzy match). Used by OpenClaw to avoid needing IDs."""
+    """Add an item by name. Matches library items by name; creates a new library item if none match."""
     gl = db.get(GroceryList, list_id)
     if not gl:
         raise HTTPException(404, "List not found")
 
-    lib_item = db.query(LibraryItem).filter(LibraryItem.name.ilike(f"%{name}%")).first()
+    name_clean = name.strip()
+    if not name_clean:
+        raise HTTPException(400, "Item name cannot be empty")
+
+    lib_item = (
+        db.query(LibraryItem)
+        .filter(LibraryItem.name.ilike(name_clean))
+        .first()
+    )
     if not lib_item:
-        raise HTTPException(404, f"No library item matching '{name}'")
+        lib_item = db.query(LibraryItem).filter(LibraryItem.name.ilike(f"%{name_clean}%")).first()
+    if not lib_item:
+        # Create new library item so users can add from list view without going to Library
+        first_cat = db.query(Category).order_by(Category.sort_order).first()
+        if not first_cat:
+            raise HTTPException(400, "No categories defined; add a category first")
+        lib_item = LibraryItem(
+            name=name_clean,
+            category_id=first_cat.id,
+            default_quantity=1.0,
+            unit="unit",
+            created_by_id=user.id,
+        )
+        db.add(lib_item)
+        db.flush()
 
     existing = (
         db.query(GroceryListItem)
@@ -205,12 +279,30 @@ def add_item_by_name(
     db.add(item)
     db.commit()
     db.refresh(item)
+    item = (
+        db.query(GroceryListItem)
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
+        .get(item.id)
+    )
     return item
 
 
 @router.put("/{list_id}/items/{item_id}", response_model=GroceryListItemOut)
 def update_item(list_id: int, item_id: int, data: UpdateListItem, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    item = db.query(GroceryListItem).filter_by(id=item_id, list_id=list_id).first()
+    item = (
+        db.query(GroceryListItem)
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
+        .filter_by(id=item_id, list_id=list_id)
+        .first()
+    )
     if not item:
         raise HTTPException(404, "List item not found")
     for k, v in data.model_dump(exclude_unset=True).items():
@@ -222,7 +314,16 @@ def update_item(list_id: int, item_id: int, data: UpdateListItem, user: User = D
 
 @router.patch("/{list_id}/items/{item_id}/purchase", response_model=GroceryListItemOut)
 def purchase_item(list_id: int, item_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    item = db.query(GroceryListItem).filter_by(id=item_id, list_id=list_id).first()
+    item = (
+        db.query(GroceryListItem)
+        .options(
+            joinedload(GroceryListItem.library_item).joinedload(LibraryItem.category),
+            joinedload(GroceryListItem.added_by),
+            joinedload(GroceryListItem.purchased_by),
+        )
+        .filter_by(id=item_id, list_id=list_id)
+        .first()
+    )
     if not item:
         raise HTTPException(404, "List item not found")
 

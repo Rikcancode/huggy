@@ -60,11 +60,13 @@ class LibraryItem(Base):
     image_url = Column(String(500), nullable=True)
     notes = Column(Text, nullable=True)
     translations = Column(JSONType, default=dict)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     category = relationship("Category", back_populates="items")
     reminders = relationship("RepurchaseReminder", back_populates="library_item")
+    created_by = relationship("User", foreign_keys=[created_by_id])
 
 
 class GroceryList(Base):
@@ -73,10 +75,12 @@ class GroceryList(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
     is_active = Column(Boolean, default=True)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     items = relationship("GroceryListItem", back_populates="grocery_list", cascade="all, delete-orphan")
+    created_by = relationship("User", foreign_keys=[created_by_id])
 
 
 class GroceryListItem(Base):

@@ -25,7 +25,7 @@ def list_items(
     q: str | None = Query(None, description="Search by name"),
     db: Session = Depends(get_db),
 ):
-    query = db.query(LibraryItem).options(joinedload(LibraryItem.category))
+    query = db.query(LibraryItem).options(joinedload(LibraryItem.category), joinedload(LibraryItem.created_by))
     if category_id:
         query = query.filter(LibraryItem.category_id == category_id)
     if q:
@@ -35,7 +35,7 @@ def list_items(
 
 @router.get("/{item_id}", response_model=LibraryItemOut)
 def get_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(LibraryItem).options(joinedload(LibraryItem.category)).get(item_id)
+    item = db.query(LibraryItem).options(joinedload(LibraryItem.category), joinedload(LibraryItem.created_by)).get(item_id)
     if not item:
         raise HTTPException(404, "Item not found")
     return item
@@ -46,16 +46,17 @@ def create_item(data: LibraryItemCreate, admin: User = Depends(require_admin), d
     existing = db.query(LibraryItem).filter(LibraryItem.name.ilike(data.name)).first()
     if existing:
         raise HTTPException(409, f"Item '{data.name}' already exists (id={existing.id})")
-    item = LibraryItem(**data.model_dump())
+    item = LibraryItem(**data.model_dump(), created_by_id=admin.id)
     db.add(item)
     db.commit()
     db.refresh(item)
+    item = db.query(LibraryItem).options(joinedload(LibraryItem.category), joinedload(LibraryItem.created_by)).get(item.id)
     return item
 
 
 @router.put("/{item_id}", response_model=LibraryItemOut)
 def update_item(item_id: int, data: LibraryItemUpdate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    item = db.get(LibraryItem, item_id)
+    item = db.query(LibraryItem).options(joinedload(LibraryItem.category), joinedload(LibraryItem.created_by)).get(item_id)
     if not item:
         raise HTTPException(404, "Item not found")
     for k, v in data.model_dump(exclude_unset=True).items():

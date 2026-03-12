@@ -27,6 +27,12 @@ class CategoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserRef(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
 # ---------- Library Item ----------
 
 class LibraryItemCreate(BaseModel):
@@ -61,9 +67,11 @@ class LibraryItemOut(BaseModel):
     image_url: str | None
     notes: str | None
     translations: dict
+    created_by_id: int | None = None
     created_at: datetime
     updated_at: datetime
     category: CategoryOut | None = None
+    created_by: UserRef | None = None
     model_config = {"from_attributes": True}
 
 
@@ -92,6 +100,8 @@ class GroceryListItemOut(BaseModel):
     notes: str | None
     created_at: datetime
     library_item: LibraryItemOut | None = None
+    added_by: UserRef | None = None
+    purchased_by: UserRef | None = None
     model_config = {"from_attributes": True}
 
 
@@ -99,9 +109,11 @@ class GroceryListOut(BaseModel):
     id: int
     name: str
     is_active: bool
+    created_by_id: int | None = None
     created_at: datetime
     updated_at: datetime
     items: list[GroceryListItemOut] = []
+    created_by: UserRef | None = None
     model_config = {"from_attributes": True}
 
 
@@ -109,9 +121,19 @@ class GroceryListSummary(BaseModel):
     id: int
     name: str
     is_active: bool
+    created_by_id: int | None = None
     created_at: datetime
     updated_at: datetime
     item_count: int = 0
+    created_by: UserRef | None = None
+    model_config = {"from_attributes": True}
+
+
+class RecentPurchaseOut(BaseModel):
+    """Purchased list item with list name for Recent Purchases tab."""
+    list_id: int
+    list_name: str
+    item: GroceryListItemOut
     model_config = {"from_attributes": True}
 
 

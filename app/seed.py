@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
-from app.models import Category, LibraryItem, User
+from app.models import Category, LibraryItem, User, GroceryList
 from app.config import settings
+
+DEFAULT_LISTS = ["Grocery", "Nora", "Housestuff"]
 
 CATEGORIES = [
     {"name": "Fruit",              "icon": "🍎", "sort_order": 1},
@@ -178,6 +180,13 @@ ITEMS = [
 
 def seed_database(db: Session):
     if db.query(Category).count() > 0:
+        # Ensure default lists exist even when not doing full seed
+        admin = db.query(User).filter(User.role == "admin").first()
+        if admin:
+            for list_name in DEFAULT_LISTS:
+                if db.query(GroceryList).filter(GroceryList.name == list_name).first() is None:
+                    db.add(GroceryList(name=list_name, created_by_id=admin.id))
+            db.commit()
         return
 
     admin = User(name="Admin", api_key=settings.admin_api_key, role="admin", language="en")
@@ -203,5 +212,9 @@ def seed_database(db: Session):
             translations=translations or {},
         )
         db.add(item)
+
+    for list_name in DEFAULT_LISTS:
+        if db.query(GroceryList).filter(GroceryList.name == list_name).first() is None:
+            db.add(GroceryList(name=list_name, created_by_id=admin.id))
 
     db.commit()

@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grocery List — Admin</title>
+<title>Mechou — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
@@ -16,14 +19,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sa
   background: var(--bg); color: var(--text); line-height: 1.5; }
 
 .app { max-width: 1100px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.5rem; margin-bottom: 8px; }
+.app-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+.app-header { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.app-logo { width: 48px; height: 48px; color: var(--text); flex-shrink: 0; }
+.app-logo svg { width: 100%; height: 100%; display: block; }
+.app-brand { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 1.85rem; letter-spacing: -0.02em; color: var(--text); }
 h2 { font-size: 1.15rem; color: var(--muted); margin-bottom: 16px; }
 
-nav { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.nav-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.nav-toggle { display: none; padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); cursor: pointer; font-size: .9rem; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
 nav button { padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--surface); color: var(--text); cursor: pointer; font-size: .9rem; }
 nav button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 nav button:hover:not(.active) { border-color: var(--accent); }
+@media (max-width: 768px) {
+  .nav-toggle { display: block; }
+  nav { display: none; width: 100%; flex-direction: column; margin-top: 8px; }
+  nav.open { display: flex; }
+  nav button { width: 100%; text-align: left; }
+}
 
 .panel { display: none; }
 .panel.active { display: block; }
@@ -74,7 +90,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
 .list-item.purchased { opacity: .5; text-decoration: line-through; }
 .list-item .qty { color: var(--accent); font-weight: 600; white-space: nowrap; }
-.list-item .name { flex: 1; }
+.list-item .qty-edit { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.list-item .qty-edit input, .list-item .qty-edit select { margin: 0; }
+.list-item .name { flex: 1; min-width: 0; }
 .list-item .actions { display: flex; gap: 4px; }
 
 .item-icon { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
@@ -113,18 +131,39 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 </head>
 <body>
 <div class="app">
-  <h1>🛒 Grocery List</h1>
+  <div class="app-topbar">
+    <header class="app-header">
+      <div class="app-logo">
+        <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M97.8321 310.687C93.8478 250.409 91.4278 163.827 124.259 127.664C140.43 109.851 164.023 111.991 202.406 111.991C229.619 111.991 264.358 110.277 281.616 131.852C311.146 168.764 298.683 264.684 298.683 311.051" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M144.124 311.051C136.474 262.469 134.416 183.062 194.663 169.701C207.312 166.893 221.213 165.153 232.963 171.017C266.992 188.002 262.677 253.226 262.677 283.72C262.677 292.926 260.169 316.401 260.169 309.948" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M183.462 181.24C200.402 201.868 210.883 201.868 224.922 170.996" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M204.051 203.804C202.763 220.798 206.354 237.682 206.354 254.379" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M152.961 259.282C187.589 272.193 219.445 257.459 251.85 248.804" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M134.745 112.357C117.202 62.5071 50.6561 130.859 104.853 148.95" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M271.369 109.451C289.331 54.1644 344.696 121.514 296.13 135.982" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M178.985 145.605C178.272 142.3 179.24 139.552 179.368 136.527" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M222.711 142.102C222.711 139.51 222.711 136.914 222.711 134.322" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="app-brand">Mechou</span>
+    </header>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="tabs">☰ Menu</button>
+  </div>
   <h2>Admin Panel</h2>
 
-  <nav id="tabs">
-    <button data-tab="shopping" class="active">Shopping List</button>
-    <button data-tab="calendar">Calendar</button>
-    <button data-tab="library">Library</button>
-    <button data-tab="categories">Categories</button>
-    <button data-tab="supermarkets">Supermarkets</button>
-    <button data-tab="reminders">Reminders</button>
-    <button data-tab="users">Users</button>
-  </nav>
+  <div class="nav-wrap">
+    <nav id="tabs">
+      <button data-tab="shopping" class="active">Shopping List</button>
+      <button data-tab="recent">Recent Purchases</button>
+      <button data-tab="calendar">Calendar</button>
+      <button data-tab="library">Library</button>
+      <button data-tab="categories">Categories</button>
+      <button data-tab="supermarkets">Supermarkets</button>
+      <button data-tab="reminders">Reminders</button>
+      <button data-tab="users">Users</button>
+    </nav>
+  </div>
 
   <!-- SHOPPING LIST -->
   <div id="panel-shopping" class="panel active">
@@ -134,11 +173,22 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
       <button class="btn-primary btn-sm" onclick="promptNewList()">+ New List</button>
     </div>
     <div class="toolbar">
-      <input id="add-item-search" placeholder="Add item by name…" list="lib-suggestions">
+      <input id="add-item-search" placeholder="Type any item name (new items are added to Library)…" list="lib-suggestions">
       <datalist id="lib-suggestions"></datalist>
       <button class="btn-primary btn-sm" onclick="addItemByName()">Add</button>
     </div>
     <div id="shopping-content"></div>
+  </div>
+
+  <!-- RECENT PURCHASES -->
+  <div id="panel-recent" class="panel">
+    <div class="toolbar">
+      <select id="recent-list-filter" style="max-width:240px" onchange="loadRecentPurchases()">
+        <option value="">All lists</option>
+      </select>
+    </div>
+    <p style="color:var(--muted);margin-bottom:12px">Items appear here when marked as purchased. Set expiration dates only here.</p>
+    <div id="recent-content"></div>
   </div>
 
   <!-- CALENDAR -->
@@ -167,7 +217,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
       <button class="btn-primary btn-sm" onclick="showItemModal()">+ Add Item</button>
     </div>
     <table><thead><tr>
-      <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
+      <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>Created by</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
     </tr></thead><tbody id="lib-body"></tbody></table>
   </div>
 
@@ -245,6 +295,15 @@ function modal(title, body, onSave) {
   document.getElementById('modal-save').onclick = onSave;
 }
 
+// ── Nav accordion (mobile) ──
+document.getElementById('nav-toggle').addEventListener('click', () => {
+  const nav = document.getElementById('tabs');
+  const toggle = document.getElementById('nav-toggle');
+  nav.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', nav.classList.contains('open'));
+  toggle.textContent = nav.classList.contains('open') ? '✕ Close' : '☰ Menu';
+});
+
 // ── Tabs ──
 document.getElementById('tabs').addEventListener('click', e => {
   if (e.target.tagName !== 'BUTTON') return;
@@ -252,8 +311,11 @@ document.getElementById('tabs').addEventListener('click', e => {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   e.target.classList.add('active');
   document.getElementById('panel-' + e.target.dataset.tab).classList.add('active');
+  document.getElementById('tabs').classList.remove('open');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
+  document.getElementById('nav-toggle').textContent = '☰ Menu';
   const loaders = {library: loadLibrary, categories: loadCategories, supermarkets: loadSupermarkets,
-    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar};
+    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases};
   loaders[e.target.dataset.tab]?.();
 });
 
@@ -303,6 +365,7 @@ async function loadLibrary() {
     <td>${i.default_quantity}</td><td>${i.unit}</td>
     <td>${i.image_url ? `<img src="${i.image_url}" class="item-thumb" alt="">` : ''}</td>
     <td>${i.notes || ''}</td>
+    <td>${i.created_by?.name || '—'}</td>
     <td>${i.translations?.da || ''}</td><td>${i.translations?.it || ''}</td><td>${i.translations?.bg || ''}</td>
     <td><button class="btn-sm" onclick='editItem(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✎</button>
     <button class="btn-sm btn-danger" onclick="delItem(${i.id})">✕</button></td>
@@ -381,6 +444,11 @@ async function loadLists() {
   const sel = document.getElementById('list-select');
   sel.innerHTML = '<option value="">Select list…</option>' +
     lists.map(l => `<option value="${l.id}">${l.name} (${l.item_count} items)</option>`).join('');
+  const grocery = lists.find(l => l.name === 'Grocery');
+  if (grocery) {
+    sel.value = String(grocery.id);
+    loadShoppingList();
+  }
   allSupermarkets = await api('/supermarkets');
   const ss = document.getElementById('supermarket-select');
   ss.innerHTML = '<option value="">Default order</option>' +
@@ -406,6 +474,8 @@ async function loadShoppingList() {
 
   const pending = list.items.filter(i => i.status === 'pending');
   const purchased = list.items.filter(i => i.status === 'purchased');
+  const units = ['unit','pack','grams','kg','liters','ml','bottle','jar','can','bunch','piece'];
+  const createdBy = list.created_by ? `<p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">List created by ${list.created_by.name}</p>` : '';
 
   const grouped = {};
   pending.forEach(i => {
@@ -415,19 +485,21 @@ async function loadShoppingList() {
     (grouped[key] = grouped[key] || []).push(i);
   });
 
-  let html = '';
+  let html = createdBy;
   for (const [cat, items] of Object.entries(grouped)) {
     html += `<div class="list-group"><h3>${cat}</h3>`;
     items.forEach(i => {
       const icon = i.library_item?.icon || '';
       const thumb = i.library_item?.image_url ? `<img src="${i.library_item.image_url}" class="item-thumb" alt="">` : '';
-      const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
-      html += `<div class="list-item">
+      const addedBy = i.added_by ? ` <span style="font-size:.75rem;color:var(--muted)">added by ${i.added_by.name}</span>` : '';
+      html += `<div class="list-item" data-item-id="${i.id}">
         ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
-        <span class="qty">${i.quantity} ${i.unit}</span>
-        <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${expBadge}</span>
+        <span class="qty-edit">
+          <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}" style="width:56px;padding:4px 6px">
+          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}" style="width:72px;padding:4px 6px">${units.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+        </span>
+        <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${addedBy}</span>
         <span class="actions">
-          <button class="btn-sm" onclick="showExpModal(${listId},${i.id},'${i.expiration_date || ''}')" title="Set expiration">📅</button>
           <button class="btn-sm" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
           <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
         </span></div>`;
@@ -439,13 +511,12 @@ async function loadShoppingList() {
     html += `<div class="list-group"><h3>✅ Purchased</h3>`;
     purchased.forEach(i => {
       const icon = i.library_item?.icon || '';
-      const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
+      const purchasedBy = i.purchased_by ? ` <span style="font-size:.75rem;color:var(--muted)">by ${i.purchased_by.name}</span>` : '';
       html += `<div class="list-item purchased">
         ${icon ? `<span class="item-icon">${icon}</span>` : ''}
         <span class="qty">${i.quantity} ${i.unit}</span>
-        <span class="name">${i.library_item?.name || '?'}${expBadge}</span>
+        <span class="name">${i.library_item?.name || '?'}${purchasedBy}</span>
         <span class="actions">
-          <button class="btn-sm" onclick="showExpModal(${listId},${i.id},'${i.expiration_date || ''}')" title="Set expiration">📅</button>
           <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})">✕</button>
         </span></div>`;
     });
@@ -454,6 +525,57 @@ async function loadShoppingList() {
 
   if (!list.items.length) html = '<p style="color:var(--muted)">List is empty. Add items above.</p>';
   document.getElementById('shopping-content').innerHTML = html;
+  document.getElementById('shopping-content').querySelectorAll('.qty-input, .unit-select').forEach(el => {
+    el.addEventListener('change', async function() {
+      const listId = this.dataset.listId;
+      const itemId = this.dataset.itemId;
+      const row = this.closest('.list-item');
+      const qtyInput = row.querySelector('.qty-input');
+      const unitSelect = row.querySelector('.unit-select');
+      const qty = parseFloat(qtyInput?.value) || 1;
+      const unit = unitSelect?.value || 'unit';
+      try {
+        await api(`/lists/${listId}/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ quantity: qty, unit }) });
+        toast('Updated');
+      } catch (e) { toast(e.message); }
+    });
+  });
+}
+
+// ── Recent Purchases (expiration only here) ──
+async function loadRecentPurchases() {
+  const listId = document.getElementById('recent-list-filter')?.value || '';
+  let url = '/lists/recent-purchases?limit=100';
+  if (listId) url += '&list_id=' + listId;
+  const data = await api(url);
+  const lists = await api('/lists');
+  const sel = document.getElementById('recent-list-filter');
+  if (sel) {
+    sel.innerHTML = '<option value="">All lists</option>' +
+      lists.map(l => `<option value="${l.id}" ${listId === String(l.id) ? 'selected' : ''}>${l.name}</option>`).join('');
+  }
+  if (!data.length) {
+    document.getElementById('recent-content').innerHTML = '<p style="color:var(--muted)">No recent purchases. Mark items as purchased on a list to see them here.</p>';
+    return;
+  }
+  let html = '<div class="list-group"><h3>Recent purchases</h3>';
+  data.forEach(({ list_id, list_name, item: i }) => {
+    const icon = i.library_item?.icon || '';
+    const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
+    const purchasedAt = i.purchased_at ? new Date(i.purchased_at).toLocaleString() : '';
+    const by = i.purchased_by?.name ? ` by ${i.purchased_by.name}` : '';
+    html += `<div class="list-item">
+      ${icon ? `<span class="item-icon">${icon}</span>` : ''}
+      <span class="qty">${i.quantity} ${i.unit}</span>
+      <span class="name">${i.library_item?.name || '?'} — <em>${list_name}</em>${expBadge}</span>
+      <span style="font-size:.75rem;color:var(--muted)">${purchasedAt}${by}</span>
+      <span class="actions">
+        <button class="btn-sm" onclick="showExpModal(${list_id},${i.id},'${i.expiration_date || ''}')" title="Set expiration">📅 Set expiration</button>
+        <button class="btn-sm btn-danger" onclick="removeItem(${list_id},${i.id}); loadRecentPurchases();" title="Remove">✕</button>
+      </span></div>`;
+  });
+  html += '</div>';
+  document.getElementById('recent-content').innerHTML = html;
 }
 
 function expiryClass(dateStr) {
@@ -491,8 +613,11 @@ async function addItemByName() {
   const listId = document.getElementById('list-select').value;
   if (!name || !listId) { toast('Select a list and type an item name'); return; }
   try {
-    await api(`/lists/${listId}/items/by-name?name=${encodeURIComponent(name)}`, {method: 'POST'});
+    const added = await api(`/lists/${listId}/items/by-name?name=${encodeURIComponent(name)}`, {method: 'POST'});
     document.getElementById('add-item-search').value = '';
+    if (added?.library_item && !allLibrary.find(i => i.id === added.library_item.id))
+      allLibrary.push(added.library_item);
+    updateSuggestions();
     toast('Added'); loadShoppingList();
   } catch (e) { toast(e.message); }
 }
