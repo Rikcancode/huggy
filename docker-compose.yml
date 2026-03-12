@@ -2,8 +2,8 @@ name: huggy
 
 services:
   huggy:
-    # Use a tag that includes app/routers/auth (e.g. 79db995 or latest from CI)
-    image: docker.io/rikcodes/huggy:79db995
+    # Use ebba2d0 or later for Admin/mechou login (79db995 has auth but no default password)
+    image: docker.io/rikcodes/huggy:ebba2d0
     container_name: huggy
     ports:
       - mode: ingress

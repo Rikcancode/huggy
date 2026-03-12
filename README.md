@@ -42,16 +42,33 @@ All settings are configured via environment variables (prefix `GROCERY_`):
 **Use `docker-compose.yml` only** — do not paste the separate zimaos-app.yaml file (it is not valid compose). **Do you need a YAML that points to a GitHub repo?**  
 Only if the store supports “Install from URL” or “Add from repository” and expects a manifest. Otherwise you don’t.
 
-The compose uses `docker.io/rikcodes/huggy:79db995`. The image is built and pushed by GitHub Actions on every push to `main` (repo secrets `DOCKER_USERNAME` and `DOCKER_PASSWORD`). If `79db995` is not available, use `latest` or build and push locally: `docker build -t rikcodes/huggy:79db995 . && docker push rikcodes/huggy:79db995`.
+The compose uses `docker.io/rikcodes/huggy:ebba2d0`. Use **ebba2d0 or later** for Admin/mechou login (earlier tags like 79db995 have auth but no default password). The image is built and pushed by GitHub Actions on every push to `main` (repo secrets `DOCKER_USERNAME` and `DOCKER_PASSWORD`). If the tag is not on Docker Hub, build and push locally: `docker build -t rikcodes/huggy:ebba2d0 . && docker push rikcodes/huggy:ebba2d0`.
 
 **Install:** Apps → Install a customized app → paste `docker-compose.yml` (or use its raw URL). Data is stored in `/DATA/AppData/huggy/data`.
 
 **Web login:** Username **Admin**, password **mechou** (override with `GROCERY_DEFAULT_ADMIN_PASSWORD`).
 
 **Troubleshooting**
-- **"repository does not exist" for `grocery-list`** — Use image `rikcodes/huggy`, not `grocery-list`. Set image to `docker.io/rikcodes/huggy:79db995` in the app’s compose.
-- **"No module named 'app.routers.auth'"** — The running image was built without the auth module. Pull an image built from current `main` (tag `79db995` or `latest` from CI), or build and push the image from this repo.
-- **"manifest for rikcodes/huggy:latest not found"** — The `latest` tag may not be on Docker Hub. Use tag `79db995` or build/push the image yourself.
+- **"repository does not exist" for `grocery-list`** — The image name must be **`rikcodes/huggy`**, not `grocery-list`. In ZimaOS edit the app and set the image to `docker.io/rikcodes/huggy:ebba2d0` (or use the image you built yourself, see below).
+- **"No module named 'app.routers.auth'"** — The container was built from an old or incomplete image that doesn’t include the auth router. You must use an image built from the current GitHub repo (see **Build the image yourself** below).
+- **"Invalid credentials" with Admin/mechou** — Use an image built from commit **ebba2d0 or later** (that’s when the default password was added). Build from repo (see below) if the tag isn’t on Docker Hub.
+- **"manifest for rikcodes/huggy:latest not found"** — That tag isn’t on Docker Hub (e.g. GitHub Actions not pushing). Build and push the image yourself, or build and run it on the server (see below).
+
+**Build the image yourself (when Docker Hub tags are missing or wrong)**  
+On the ZimaOS box (or any machine with Docker and git), run:
+
+```bash
+git clone https://github.com/Rikcancode/huggy.git
+cd huggy
+docker build -t rikcodes/huggy:ebba2d0 .
+```
+
+Then either:
+
+- **A) Run it directly** (no ZimaOS app):  
+  `docker run -d --name huggy -p 8089:8089 -v /DATA/AppData/huggy/data:/data -e GROCERY_DATABASE_URL=sqlite:////data/grocery.db -e GROCERY_UPLOAD_DIR=/data/uploads -e GROCERY_SEED_ON_STARTUP=true -e GROCERY_DEFAULT_ADMIN_PASSWORD=mechou rikcodes/huggy:ebba2d0`
+
+- **B) Use it in ZimaOS:** In the app’s compose, set the image to `rikcodes/huggy:ebba2d0`. ZimaOS will use the image you just built (no pull). If the app is on another machine, push first: `docker push rikcodes/huggy:ebba2d0` (after `docker login`).
 
 **Option 2 — Install from GitHub**  
 1. Repo: **https://github.com/Rikcancode/huggy**  
