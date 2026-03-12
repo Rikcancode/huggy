@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models import Category, LibraryItem, User, GroceryList
 from app.config import settings
+from app.routers.auth import hash_password
 
 DEFAULT_LISTS = ["Grocery", "Nora", "Housestuff"]
 
@@ -183,13 +184,21 @@ def seed_database(db: Session):
         # Ensure default lists exist even when not doing full seed
         admin = db.query(User).filter(User.role == "admin").first()
         if admin:
+            if not admin.password_hash:
+                admin.password_hash = hash_password(settings.default_admin_password)
             for list_name in DEFAULT_LISTS:
                 if db.query(GroceryList).filter(GroceryList.name == list_name).first() is None:
                     db.add(GroceryList(name=list_name, created_by_id=admin.id))
             db.commit()
         return
 
-    admin = User(name="Admin", api_key=settings.admin_api_key, role="admin", language="en")
+    admin = User(
+        name="Admin",
+        api_key=settings.admin_api_key,
+        role="admin",
+        language="en",
+        password_hash=hash_password(settings.default_admin_password),
+    )
     user = User(name="User", api_key=settings.user_api_key, role="user", language="en")
     db.add_all([admin, user])
     db.flush()

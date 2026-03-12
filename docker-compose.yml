@@ -2,7 +2,8 @@ name: huggy
 
 services:
   huggy:
-    image: docker.io/rikcodes/huggy:03ae1ae
+    # Use a tag that includes app/routers/auth (e.g. 79db995 or latest from CI)
+    image: docker.io/rikcodes/huggy:79db995
     container_name: huggy
     ports:
       - mode: ingress
@@ -15,6 +16,7 @@ services:
       - GROCERY_ADMIN_API_KEY=grocery-admin-key-2026
       - GROCERY_USER_API_KEY=grocery-user-key-2026
       - GROCERY_SEED_ON_STARTUP=true
+      - GROCERY_DEFAULT_ADMIN_PASSWORD=mechou
     volumes:
       - type: bind
         source: /DATA/AppData/huggy/data
@@ -55,6 +57,7 @@ x-casaos:
         - Data storage: `/DATA/AppData/huggy/data`
         - Admin API key: `grocery-admin-key-2026`
         - User API key: `grocery-user-key-2026`
+        - Web login: username **Admin**, password **mechou** (set GROCERY_DEFAULT_ADMIN_PASSWORD to change).
         Change keys in the compose environment or after install.
   index: /
   port_map: "8089"

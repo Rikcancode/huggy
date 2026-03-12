@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     user_api_key: str = "user-change-me"
     app_title: str = "Grocery List"
     secret_key: str = "change-me-session-secret"
+    default_admin_password: str = "mechou"
     seed_on_startup: bool = True
     upload_dir: str = ""
 
