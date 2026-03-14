@@ -95,6 +95,7 @@ class GroceryListItemOut(BaseModel):
     status: str
     added_by_id: int | None
     added_by_display_name: str | None = None
+    added_via: str | None = None
     purchased_by_id: int | None
     purchased_by_display_name: str | None = None
     purchased_at: datetime | None

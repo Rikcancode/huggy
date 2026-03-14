@@ -99,6 +99,7 @@ class GroceryListItem(Base):
     status = Column(String(20), nullable=False, default="pending")  # pending | purchased
     added_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     added_by_display_name = Column(String(100), nullable=True)
+    added_via = Column(String(50), nullable=True)  # e.g. "Telegram" for "Added by Primus on Telegram"
     purchased_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     purchased_by_display_name = Column(String(100), nullable=True)
     purchased_at = Column(DateTime, nullable=True)

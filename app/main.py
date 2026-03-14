@@ -44,6 +44,11 @@ def _run_migrations():
                 if not any(row[1] == col for row in r):
                     conn.execute(text(f"ALTER TABLE grocery_list_items ADD COLUMN {col} VARCHAR(100)"))
                     conn.commit()
+            # list item added_via (e.g. "Telegram" for "Added by Primus on Telegram")
+            r = conn.execute(text("PRAGMA table_info(grocery_list_items)"))
+            if not any(row[1] == "added_via" for row in r):
+                conn.execute(text("ALTER TABLE grocery_list_items ADD COLUMN added_via VARCHAR(50)"))
+                conn.commit()
             # list item updated_at (for "edited X ago")
             r = conn.execute(text("PRAGMA table_info(grocery_list_items)"))
             if not any(row[1] == "updated_at" for row in r):

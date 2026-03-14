@@ -198,6 +198,12 @@ def delete_list(list_id: int, user: User = Depends(get_current_user), db: Sessio
 
 # ---- List Items ----
 
+def _clean_added_via(v: str | None) -> str | None:
+    if not v or not (s := v.strip()):
+        return None
+    return s[:50] if len(s) > 50 else s
+
+
 @router.post("/{list_id}/items", response_model=GroceryListItemOut, status_code=201)
 def add_item(
     list_id: int,
@@ -206,6 +212,7 @@ def add_item(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     x_user_name: str | None = Header(None, alias="X-User-Name"),
+    x_added_via: str | None = Header(None, alias="X-Added-Via"),
 ):
     gl = db.get(GroceryList, list_id)
     if not gl:
@@ -233,6 +240,7 @@ def add_item(
             existing.purchased_by_id = None
             existing.added_by_id = user.id
             existing.added_by_display_name = (x_user_name.strip() if x_user_name else None)
+            existing.added_via = _clean_added_via(x_added_via)
             _log_activity(db, list_id, existing.id, "re_add", user, x_user_name, lib_item.name)
             db.commit()
             db.refresh(existing)
@@ -246,6 +254,7 @@ def add_item(
         unit=data.unit or lib_item.unit,
         added_by_id=user.id,
         added_by_display_name=(x_user_name.strip() if x_user_name else None),
+        added_via=_clean_added_via(x_added_via),
         expiration_date=data.expiration_date,
         notes=data.notes,
     )
@@ -277,6 +286,7 @@ def add_item_by_name(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     x_user_name: str | None = Header(None, alias="X-User-Name"),
+    x_added_via: str | None = Header(None, alias="X-Added-Via"),
 ):
     """Add an item by name. Matches library items by name; creates a new library item if none match."""
     gl = db.get(GroceryList, list_id)
@@ -322,6 +332,7 @@ def add_item_by_name(
             existing.purchased_by_id = None
             existing.added_by_id = user.id
             existing.added_by_display_name = (x_user_name.strip() if x_user_name else None)
+            existing.added_via = _clean_added_via(x_added_via)
             _log_activity(db, list_id, existing.id, "re_add", user, x_user_name, lib_item.name)
             db.commit()
             _notify_list_updated(request, list_id)
@@ -336,6 +347,7 @@ def add_item_by_name(
         unit=lib_item.unit,
         added_by_id=user.id,
         added_by_display_name=(x_user_name.strip() if x_user_name else None),
+        added_via=_clean_added_via(x_added_via),
     )
     db.add(item)
     db.flush()
