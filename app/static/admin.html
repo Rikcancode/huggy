@@ -143,6 +143,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .list-item-row .name { flex: 1; min-width: 0; }
+.sounds-toggle { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; font-size: .9rem; color: var(--muted); cursor: pointer; user-select: none; }
+.sounds-toggle input { cursor: pointer; }
 .list-item .unit-select { width: 72px; flex-shrink: 0; padding: 4px 6px; font-size: 0.8rem; }
 .list-item .actions { display: flex; gap: 4px; }
 
@@ -343,6 +345,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     </div>
     <div class="toolbar">
       <button type="button" class="btn-primary" id="btn-open-add-overlay" style="min-height:44px;padding:10px 20px">+ Add items</button>
+      <label class="sounds-toggle" title="Play sounds when adding, editing, removing or completing items">
+        <input type="checkbox" id="sounds-toggle" checked> Sounds
+      </label>
     </div>
     <datalist id="lib-suggestions"></datalist>
     <div id="shopping-content"></div>
@@ -475,6 +480,40 @@ function toast(msg) {
   const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg;
   document.getElementById('toast-container').appendChild(d);
   setTimeout(() => d.remove(), 3100);
+}
+
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+function playTone(freq, duration, type = 'sine', volume = 0.15) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = type;
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch (_) {}
+}
+function soundsEnabled() { return localStorage.getItem('mechou_sounds') !== '0'; }
+function playAddSound() { if (soundsEnabled()) playTone(523, 0.12); }
+function playEditSound() { if (soundsEnabled()) playTone(440, 0.08); }
+function playRemoveSound() { if (soundsEnabled()) playTone(220, 0.15); }
+function playCompleteSound() { if (soundsEnabled()) playTone(659, 0.2); }
+
+function initSoundsToggle() {
+  const cb = document.getElementById('sounds-toggle');
+  if (!cb) return;
+  cb.checked = soundsEnabled();
+  cb.addEventListener('change', () => { localStorage.setItem('mechou_sounds', cb.checked ? '1' : '0'); });
 }
 
 async function ensureLoggedIn() {
@@ -923,6 +962,7 @@ async function addItemFromOverlay(libraryItemId, quantity, unit) {
     renderAddItemsList(document.getElementById('add-overlay-search').value);
     loadShoppingList();
     toast('Added');
+    playAddSound();
   } catch (e) { toast(e.message); }
 }
 
@@ -937,6 +977,7 @@ async function addItemByNameFromOverlay(name) {
     renderAddItemsList(document.getElementById('add-overlay-search').value);
     loadShoppingList();
     toast('Added');
+    playAddSound();
   } catch (e) { toast(e.message); }
 }
 
@@ -991,6 +1032,7 @@ async function loadShoppingList() {
     (grouped[key] = grouped[key] || []).push(i);
   });
 
+  const unitList = UNITS;
   let html = createdBy;
   for (const [cat, items] of Object.entries(grouped)) {
     html += `<div class="list-group"><h3>${cat}</h3>`;
@@ -1005,6 +1047,7 @@ async function loadShoppingList() {
       const addedAgo = timeAgo(i.created_at);
       const editedAgo = (i.updated_at && i.created_at && (new Date(i.updated_at).getTime() - new Date(i.created_at).getTime() > 5000)) ? timeAgo(i.updated_at) : '';
       const metaText = `Added by ${who} · ${addedAgo}${editedAgo ? ' · edited ' + editedAgo : ''}`;
+      const unitOpts = unitList.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('');
       html += `<div class="list-item${hl}${recentClass}" data-item-id="${i.id}">
         <div class="list-item-row">
           ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
@@ -1016,7 +1059,7 @@ async function loadShoppingList() {
               <button type="button" class="list-qty-plus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Increase">+</button>
             </span>
           </span>
-          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${unitOpts}</select>
           <span class="actions">
             <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
             <button class="btn-sm btn-purchase" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
@@ -1082,6 +1125,7 @@ async function loadShoppingList() {
     try {
       await api(`/lists/${listId}/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ quantity: qty, unit }) });
       toast('Updated');
+      playEditSound();
     } catch (e) { toast(e.message); }
   }
 
@@ -1247,11 +1291,13 @@ function showExpModal(listId, itemId, currentDate) {
 
 async function purchaseItem(listId, itemId) {
   await api(`/lists/${listId}/items/${itemId}/purchase`, {method: 'PATCH'});
+  playCompleteSound();
   loadShoppingList();
 }
 
 async function removeItem(listId, itemId) {
   await api(`/lists/${listId}/items/${itemId}`, {method: 'DELETE'});
+  playRemoveSound();
   loadShoppingList();
 }
 
@@ -1282,7 +1328,9 @@ async function addItemByName() {
     if (added?.library_item && !allLibrary.find(i => i.id === added.library_item.id))
       allLibrary.push(added.library_item);
     updateSuggestions();
-    toast('Added'); loadShoppingList();
+    toast('Added');
+    playAddSound();
+    loadShoppingList();
   } catch (e) { toast(e.message); }
 }
 
@@ -1491,6 +1539,7 @@ document.getElementById('login-do-reset').addEventListener('click', async functi
     syncDrawerActiveTab('shopping');
     loadCurrentUser();
     loadLists();
+    initSoundsToggle();
     if (document.getElementById('panel-shopping').classList.contains('active')) {
       clearInterval(window._listRefreshInterval);
       window._listRefreshInterval = setInterval(() => {
