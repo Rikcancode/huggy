@@ -2,8 +2,7 @@ name: huggy
 
 services:
   huggy:
-    # Use ebba2d0 or later for Admin/mechou login (79db995 has auth but no default password)
-    image: docker.io/rikcodes/huggy:ebba2d0
+    image: docker.io/rikcodes/huggy:latest
     container_name: huggy
     ports:
       - mode: ingress
@@ -48,7 +47,7 @@ x-casaos:
   tagline:
     en_us: Grocery lists, item library, expiration tracking and reminders
   title:
-    en_us: Huggy (Grocery List)
+    en_us: Mechou
   tips:
     before_install:
       en_us: |

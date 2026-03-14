@@ -143,8 +143,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .list-item-row .name { flex: 1; min-width: 0; }
-.sounds-toggle { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; font-size: .9rem; color: var(--muted); cursor: pointer; user-select: none; }
-.sounds-toggle input { cursor: pointer; }
+.sounds-toggle { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; font-size: .9rem; color: var(--muted); cursor: pointer; user-select: none; }
+.sounds-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.sounds-toggle .toggle-track { display: inline-block; width: 36px; height: 20px; border-radius: 10px; background: var(--border); transition: background .2s; flex-shrink: 0; position: relative; }
+.sounds-toggle .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+.sounds-toggle input:checked + .toggle-track { background: var(--accent); }
+.sounds-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+.sounds-toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 .list-item .unit-select { width: 72px; flex-shrink: 0; padding: 4px 6px; font-size: 0.8rem; }
 .list-item .actions { display: flex; gap: 4px; }
 
@@ -346,7 +351,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     <div class="toolbar">
       <button type="button" class="btn-primary" id="btn-open-add-overlay" style="min-height:44px;padding:10px 20px">+ Add items</button>
       <label class="sounds-toggle" title="Play sounds when adding, editing, removing or completing items">
-        <input type="checkbox" id="sounds-toggle" checked> Sounds
+        <input type="checkbox" id="sounds-toggle" checked aria-label="Sounds on or off">
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>Sounds</span>
       </label>
     </div>
     <datalist id="lib-suggestions"></datalist>
@@ -466,6 +473,52 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 const H = {'Content-Type': 'application/json'};
 const UNITS = ['unit','pack','grams','kg','liters','ml','bottle','jar','can','bunch','piece'];
 const UNIT_STEP = { unit: 1, pack: 1, grams: 50, kg: 0.5, liters: 0.5, ml: 100, bottle: 1, jar: 1, can: 1, bunch: 1, piece: 1 };
+
+const NAME_TO_EMOJI = {
+  milk: '🥛', bread: '🍞', egg: '🥚', eggs: '🥚', cheese: '🧀', butter: '🧈', yogurt: '🥛', cream: '🥛',
+  chicken: '🍗', meat: '🥩', beef: '🥩', pork: '🥩', fish: '🐟', salmon: '🐟', tuna: '🐟', shrimp: '🦐',
+  apple: '🍎', apples: '🍎', banana: '🍌', bananas: '🍌', orange: '🍊', oranges: '🍊', lemon: '🍋', lemons: '🍋',
+  tomato: '🍅', tomatoes: '🍅', carrot: '🥕', carrots: '🥕', potato: '🥔', potatoes: '🥔', onion: '🧅', onions: '🧅',
+  lettuce: '🥬', salad: '🥬', broccoli: '🥦', pepper: '🫑', cucumber: '🥒', avocado: '🥑', garlic: '🧄',
+  rice: '🍚', pasta: '🍝', noodles: '🍜', cereal: '🥣', flour: '🌾', oats: '🥣',
+  water: '💧', juice: '🧃', coffee: '☕', tea: '🍵', wine: '🍷', beer: '🍺',
+  honey: '🍯', sugar: '🧂', salt: '🧂', oil: '🫒', vinegar: '🫙',
+  pizza: '🍕', burger: '🍔', fries: '🍟', soup: '🍲', sandwich: '🥪',
+  chocolate: '🍫', cookie: '🍪', cake: '🍰', ice: '🍦', candy: '🍬',
+  nut: '🥜', nuts: '🥜', peanut: '🥜', beans: '🫘', lentils: '🫘',
+  basil: '🌿', parsley: '🌿', spinach: '🥬', kale: '🥬', mushroom: '🍄', mushrooms: '🍄',
+  coconut: '🥥', pineapple: '🍍', strawberry: '🍓', grapes: '🍇', watermelon: '🍉', peach: '🍑', pear: '🍐',
+  corn: '🌽', peas: '🫛', pepper: '🫑', chili: '🌶️', peppers: '🫑', ginger: '🫚',
+  croissant: '🥐', bagel: '🥯', pancake: '🥞', waffle: '🧇', toast: '🍞',
+  bacon: '🥓', sausage: '🌭', ham: '🥓', turkey: '🦃', duck: '🦆',
+  cola: '🥤', soda: '🥤', beer: '🍺', wine: '🍷', champagne: '🍾',
+  soap: '🧼', detergent: '🧴', sponge: '🧽', paper: '🧻', tissue: '🧻'
+};
+
+function suggestIconFromName(name) {
+  if (!name || typeof name !== 'string') return '';
+  const lower = name.toLowerCase().trim();
+  const words = lower.split(/\s+/);
+  for (const w of words) {
+    const clean = w.replace(/[^a-z]/g, '');
+    if (clean.length < 2) continue;
+    if (NAME_TO_EMOJI[clean]) return NAME_TO_EMOJI[clean];
+    if (NAME_TO_EMOJI[w]) return NAME_TO_EMOJI[w];
+  }
+  if (NAME_TO_EMOJI[lower]) return NAME_TO_EMOJI[lower];
+  for (const [key, emoji] of Object.entries(NAME_TO_EMOJI)) {
+    if (lower.includes(key)) return emoji;
+  }
+  return '';
+}
+
+function itemDisplayIcon(libItem) {
+  if (!libItem) return '📦';
+  if (libItem.icon) return libItem.icon;
+  const suggested = suggestIconFromName(libItem.name);
+  if (suggested) return suggested;
+  return libItem.category?.icon || '📦';
+}
 
 let allCategories = [], allLibrary = [], allSupermarkets = [];
 
@@ -711,7 +764,7 @@ async function loadLibrary() {
   if (cat) url += `category_id=${cat}&`;
   allLibrary = await api(url);
   document.getElementById('lib-body').innerHTML = allLibrary.map(i => `<tr>
-    <td class="item-icon">${i.icon || i.category?.icon || ''}</td>
+    <td class="item-icon">${itemDisplayIcon(i)}</td>
     <td>${i.name}</td><td>${i.category?.icon || ''} ${i.category?.name || ''}</td>
     <td>${i.default_quantity}</td><td>${i.unit}</td>
     <td>${i.image_url ? `<img src="${i.image_url}" class="item-thumb" alt="">` : ''}</td>
@@ -754,18 +807,34 @@ function showItemModal(item = null) {
     <div><label>Italian</label><input id="m-it" value="${item?.translations?.it || ''}"></div>
     <div><label>Bulgarian</label><input id="m-bg" value="${item?.translations?.bg || ''}"></div></div>
   `, async () => {
-    const body = {name: gv('m-name'), icon: gv('m-icon') || null, category_id: +gv('m-cat'), default_quantity: +gv('m-qty'),
-      unit: gv('m-unit'), notes: gv('m-notes') || null,
-      translations: {da: gv('m-da'), it: gv('m-it'), bg: gv('m-bg')}};
-    const saved = await api(item ? `/library/${item.id}` : '/library', {method: item ? 'PUT' : 'POST', body: JSON.stringify(body)});
-    const itemId = item?.id || saved.id;
-    if (pendingImageFile) {
-      const fd = new FormData();
-      fd.append('file', pendingImageFile);
-      await fetch(`/api/library/${itemId}/image`, {method: 'POST', headers: {'X-API-Key': API_KEY}, body: fd});
+    try {
+      const body = {name: gv('m-name'), icon: gv('m-icon') || null, category_id: +gv('m-cat'), default_quantity: +gv('m-qty'),
+        unit: gv('m-unit'), notes: gv('m-notes') || null,
+        translations: {da: gv('m-da'), it: gv('m-it'), bg: gv('m-bg')}};
+      const saved = await api(item ? `/library/${item.id}` : '/library', {method: item ? 'PUT' : 'POST', body: JSON.stringify(body)});
+      const itemId = item?.id || saved?.id;
+      if (pendingImageFile && itemId) {
+        const fd = new FormData();
+        fd.append('file', pendingImageFile);
+        await fetch('/api/library/' + itemId + '/image', {method: 'POST', credentials: 'include', body: fd});
+      }
+      closeModal(); toast('Saved'); loadLibrary();
+    } catch (e) {
+      toast(e.message || 'Save failed');
     }
-    closeModal(); toast('Saved'); loadLibrary();
   });
+  setTimeout(() => {
+    const nameEl = document.getElementById('m-name');
+    const iconEl = document.getElementById('m-icon');
+    if (!nameEl || !iconEl) return;
+    const suggest = () => {
+      const emoji = suggestIconFromName(nameEl.value);
+      if (emoji && !iconEl.value) iconEl.value = emoji;
+    };
+    nameEl.addEventListener('input', suggest);
+    nameEl.addEventListener('blur', suggest);
+    if (!item?.icon && nameEl.value) suggest();
+  }, 0);
 }
 
 function handleImageSelect(input) {
@@ -872,12 +941,12 @@ function renderAddItemsList(searchStr) {
     const cat = `${i.category?.icon || ''} ${i.category?.name || 'Other'}`.trim();
     if (added) {
       return `<div class="add-overlay-item added">
-        <span class="item-icon">${i.icon || i.category?.icon || '📦'}</span>
+        <span class="item-icon">${itemDisplayIcon(i)}</span>
         <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)}</span></div>
         <span class="item-action"><span class="badge-added">Added</span></span></div>`;
     }
     return `<div class="add-overlay-item">
-      <span class="item-icon">${i.icon || i.category?.icon || '📦'}</span>
+      <span class="item-icon">${itemDisplayIcon(i)}</span>
       <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)}</span></div>
       <span class="item-action">
         <div class="add-overlay-qty">
@@ -936,7 +1005,10 @@ function escapeHtml(s) {
 
 function timeAgo(isoOrDate) {
   if (isoOrDate == null) return '';
-  const then = typeof isoOrDate === 'string' ? new Date(isoOrDate).getTime() : (isoOrDate instanceof Date ? isoOrDate.getTime() : isoOrDate);
+  let str = isoOrDate;
+  if (typeof str === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(str) && !/Z|[+-]\d{2}:?\d{2}$/.test(str))
+    str = str.replace(/\.\d+$/, '') + 'Z'; // treat server naive datetime as UTC
+  const then = typeof str === 'string' ? new Date(str).getTime() : (isoOrDate instanceof Date ? isoOrDate.getTime() : isoOrDate);
   if (isNaN(then)) return '';
   const diffSec = (Date.now() - then) / 1000;
   if (diffSec < 45) return 'Now';
@@ -1041,7 +1113,7 @@ async function loadShoppingList() {
       const createdMs = i.created_at ? new Date(i.created_at).getTime() : 0;
       const recent = (Date.now() - createdMs) < 15 * 60 * 1000;
       const recentClass = recent ? ' list-item-recent' : '';
-      const icon = i.library_item?.icon || '';
+      const icon = itemDisplayIcon(i.library_item);
       const thumb = i.library_item?.image_url ? `<img src="${i.library_item.image_url}" class="item-thumb" alt="">` : '';
       const who = i.added_by_display_name || i.added_by?.name || 'Someone';
       const addedAgo = timeAgo(i.created_at);
@@ -1075,7 +1147,7 @@ async function loadShoppingList() {
     html += `<div class="list-group"><h3>✅ Purchased</h3>`;
     purchased.forEach(i => {
       const hl = changedIds.has(i.id) ? ' list-item-highlight' : '';
-      const icon = i.library_item?.icon || '';
+      const icon = itemDisplayIcon(i.library_item);
       const pWho = i.purchased_by_display_name || i.purchased_by?.name || 'Someone';
       const pAgo = timeAgo(i.purchased_at);
       const purchasedMetaText = `by ${pWho} · ${pAgo}`;
@@ -1251,7 +1323,7 @@ async function loadRecentPurchases() {
   }
   let html = '<div class="list-group"><h3>Recent purchases</h3>';
   data.forEach(({ list_id, list_name, item: i }) => {
-    const icon = i.library_item?.icon || '';
+    const icon = itemDisplayIcon(i.library_item);
     const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
     const purchasedAt = i.purchased_at ? new Date(i.purchased_at).toLocaleString() : '';
     const by = i.purchased_by?.name ? ` by ${i.purchased_by.name}` : '';
@@ -1485,7 +1557,7 @@ async function loadCalendar() {
       let cls = 'ok';
       if (expDate < today) cls = 'expired';
       else if (expDate <= soonThreshold) cls = 'soon';
-      const icon = i.library_item?.icon || '';
+      const icon = itemDisplayIcon(i.library_item);
       const name = i.library_item?.name || '?';
       html += `<div class="cal-item ${cls}" title="${name} — ${i.quantity} ${i.unit}${i.status === 'purchased' ? ' (purchased)' : ''}">${icon} ${name}</div>`;
     });
