@@ -105,6 +105,7 @@ class GroceryListItem(Base):
     expiration_date = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     grocery_list = relationship("GroceryList", back_populates="items")
     library_item = relationship("LibraryItem")

@@ -44,6 +44,12 @@ def _run_migrations():
                 if not any(row[1] == col for row in r):
                     conn.execute(text(f"ALTER TABLE grocery_list_items ADD COLUMN {col} VARCHAR(100)"))
                     conn.commit()
+            # list item updated_at (for "edited X ago")
+            r = conn.execute(text("PRAGMA table_info(grocery_list_items)"))
+            if not any(row[1] == "updated_at" for row in r):
+                conn.execute(text("ALTER TABLE grocery_list_items ADD COLUMN updated_at DATETIME"))
+                conn.execute(text("UPDATE grocery_list_items SET updated_at = created_at WHERE updated_at IS NULL"))
+                conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 

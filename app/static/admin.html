@@ -80,6 +80,8 @@ button:hover, .btn:hover { border-color: var(--accent); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-danger { color: var(--red); }
+.btn-purchase { background: var(--green); border-color: var(--green); color: #000; }
+.btn-purchase:hover { filter: brightness(1.1); }
 .btn-sm { padding: 3px 8px; font-size: .78rem; }
 
 input, select, textarea { padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border);
@@ -109,14 +111,18 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-group { margin-bottom: 20px; }
 .list-group h3 { font-size: .95rem; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .list-item {
-  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   margin-bottom: 8px; transition: background .3s, box-shadow .2s;
 }
 .list-item:hover { box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.list-item-recent { border: 2px solid #d4a017; box-shadow: 0 0 0 1px rgba(212,160,23,.25); }
+.list-item .list-item-row { display: flex; align-items: center; gap: 10px; }
+.list-item .list-item-meta { font-size: .75rem; color: var(--muted); padding-left: 38px; margin-top: 2px; }
+.list-item .list-item-meta:empty { display: none; }
 .list-item.purchased { opacity: .6; text-decoration: line-through; }
 .list-item.list-item-highlight { background: var(--accent); color: #fff; }
-.list-item.list-item-highlight .qty, .list-item.list-item-highlight span[style*="muted"] { color: rgba(255,255,255,.9); }
+.list-item.list-item-highlight .qty, .list-item.list-item-highlight span[style*="muted"], .list-item.list-item-highlight .list-item-meta { color: rgba(255,255,255,.9); }
 .activity-details summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .activity-log { font-size: .8rem; max-height: 200px; overflow-y: auto; margin-top: 8px; }
 .activity-log div { padding: 4px 0; border-bottom: 1px solid var(--border); }
@@ -136,7 +142,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-item .qty-edit input, .list-item .qty-edit select { margin: 0; }
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
-.list-item .name { flex: 1; min-width: 0; }
+.list-item .list-item-row .name { flex: 1; min-width: 0; }
 .list-item .unit-select { width: 72px; flex-shrink: 0; padding: 4px 6px; font-size: 0.8rem; }
 .list-item .actions { display: flex; gap: 4px; }
 
@@ -868,6 +874,21 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+function timeAgo(isoOrDate) {
+  if (isoOrDate == null) return '';
+  const then = typeof isoOrDate === 'string' ? new Date(isoOrDate).getTime() : (isoOrDate instanceof Date ? isoOrDate.getTime() : isoOrDate);
+  if (isNaN(then)) return '';
+  const diffSec = (Date.now() - then) / 1000;
+  if (diffSec < 45) return 'Now';
+  if (diffSec < 60) return '1m ago';
+  const mins = Math.floor(diffSec / 60);
+  if (mins < 60) return mins + 'm ago';
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + 'h ago';
+  const days = Math.floor(hours / 24);
+  return days === 1 ? '1 day ago' : days + ' days ago';
+}
+
 async function addItemFromOverlay(libraryItemId, quantity, unit) {
   if (!addOverlayListId) return;
   const item = allLibrary.find(i => i.id === libraryItemId);
@@ -954,24 +975,34 @@ async function loadShoppingList() {
     html += `<div class="list-group"><h3>${cat}</h3>`;
     items.forEach(i => {
       const hl = changedIds.has(i.id) ? ' list-item-highlight' : '';
+      const createdMs = i.created_at ? new Date(i.created_at).getTime() : 0;
+      const recent = (Date.now() - createdMs) < 15 * 60 * 1000;
+      const recentClass = recent ? ' list-item-recent' : '';
       const icon = i.library_item?.icon || '';
       const thumb = i.library_item?.image_url ? `<img src="${i.library_item.image_url}" class="item-thumb" alt="">` : '';
-      const addedBy = (i.added_by_display_name || i.added_by?.name) ? ` <span style="font-size:.75rem;color:var(--muted)">added by ${i.added_by_display_name || i.added_by?.name}</span>` : '';
-      html += `<div class="list-item${hl}" data-item-id="${i.id}">
-        ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
-        <span class="qty-edit">
-          <span class="list-qty-wrap">
-            <button type="button" class="list-qty-minus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Decrease">−</button>
-            <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}">
-            <button type="button" class="list-qty-plus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Increase">+</button>
+      const who = i.added_by_display_name || i.added_by?.name || 'Someone';
+      const addedAgo = timeAgo(i.created_at);
+      const editedAgo = (i.updated_at && i.created_at && (new Date(i.updated_at).getTime() - new Date(i.created_at).getTime() > 5000)) ? timeAgo(i.updated_at) : '';
+      const metaText = `Added by ${who} · ${addedAgo}${editedAgo ? ' · edited ' + editedAgo : ''}`;
+      html += `<div class="list-item${hl}${recentClass}" data-item-id="${i.id}">
+        <div class="list-item-row">
+          ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
+          <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}</span>
+          <span class="qty-edit">
+            <span class="list-qty-wrap">
+              <button type="button" class="list-qty-minus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Decrease">−</button>
+              <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}">
+              <button type="button" class="list-qty-plus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Increase">+</button>
+            </span>
           </span>
-        </span>
-        <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${addedBy}</span>
-        <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
-        <span class="actions">
-          <button class="btn-sm" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
-          <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
-        </span></div>`;
+          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+          <span class="actions">
+            <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
+            <button class="btn-sm btn-purchase" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
+          </span>
+        </div>
+        <div class="list-item-meta">${metaText}</div>
+      </div>`;
     });
     html += '</div>';
   }
@@ -981,14 +1012,20 @@ async function loadShoppingList() {
     purchased.forEach(i => {
       const hl = changedIds.has(i.id) ? ' list-item-highlight' : '';
       const icon = i.library_item?.icon || '';
-      const purchasedBy = (i.purchased_by_display_name || i.purchased_by?.name) ? ` <span style="font-size:.75rem;color:var(--muted)">by ${i.purchased_by_display_name || i.purchased_by?.name}</span>` : '';
+      const pWho = i.purchased_by_display_name || i.purchased_by?.name || 'Someone';
+      const pAgo = timeAgo(i.purchased_at);
+      const purchasedMetaText = `by ${pWho} · ${pAgo}`;
       html += `<div class="list-item purchased${hl}">
-        ${icon ? `<span class="item-icon">${icon}</span>` : ''}
-        <span class="qty">${i.quantity} ${i.unit}</span>
-        <span class="name">${i.library_item?.name || '?'}${purchasedBy}</span>
-        <span class="actions">
-          <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})">✕</button>
-        </span></div>`;
+        <div class="list-item-row">
+          ${icon ? `<span class="item-icon">${icon}</span>` : ''}
+          <span class="name">${i.library_item?.name || '?'}</span>
+          <span class="qty">${i.quantity} ${i.unit}</span>
+          <span class="actions">
+            <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})">✕</button>
+          </span>
+        </div>
+        <div class="list-item-meta">${purchasedMetaText}</div>
+      </div>`;
     });
     html += '</div>';
   }

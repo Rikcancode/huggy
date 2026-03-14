@@ -101,6 +101,7 @@ class GroceryListItemOut(BaseModel):
     expiration_date: date | None
     notes: str | None
     created_at: datetime
+    updated_at: datetime | None = None
     library_item: LibraryItemOut | None = None
     added_by: UserRef | None = None
     purchased_by: UserRef | None = None
