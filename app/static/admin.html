@@ -108,8 +108,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 .list-group { margin-bottom: 20px; }
 .list-group h3 { font-size: .95rem; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
-.list-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); transition: background .3s; }
-.list-item.purchased { opacity: .5; text-decoration: line-through; }
+.list-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 8px; transition: background .3s, box-shadow .2s;
+}
+.list-item:hover { box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.list-item.purchased { opacity: .6; text-decoration: line-through; }
 .list-item.list-item-highlight { background: var(--accent); color: #fff; }
 .list-item.list-item-highlight .qty, .list-item.list-item-highlight span[style*="muted"] { color: rgba(255,255,255,.9); }
 .activity-details summary { cursor: pointer; font-weight: 600; color: var(--muted); }
@@ -130,7 +135,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 }
 .list-item .qty-edit input, .list-item .qty-edit select { margin: 0; }
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
+.list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .name { flex: 1; min-width: 0; }
+.list-item .unit-select { width: 72px; flex-shrink: 0; padding: 4px 6px; font-size: 0.8rem; }
 .list-item .actions { display: flex; gap: 4px; }
 
 .item-icon { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
@@ -958,9 +965,9 @@ async function loadShoppingList() {
             <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}">
             <button type="button" class="list-qty-plus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Increase">+</button>
           </span>
-          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
         </span>
         <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${addedBy}</span>
+        <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
         <span class="actions">
           <button class="btn-sm" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
           <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
