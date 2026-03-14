@@ -170,6 +170,12 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .cal-item.ok { background: rgba(52,211,153,.15); color: var(--green); }
 .cal-more { font-size: .7rem; color: var(--muted); padding: 1px 4px; cursor: pointer; }
 .cal-legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: .8rem; color: var(--muted); align-items: center; }
+
+.mealplan-grid { display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
+.mealplan-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.mealplan-row label { min-width: 88px; font-weight: 600; color: var(--muted); }
+.mealplan-row input { flex: 1; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border); }
+.mealplan-row input:focus { outline: none; border-color: var(--accent); }
 .cal-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
 .cal-dot-expired { background: var(--red); }
 .cal-dot-soon { background: var(--orange); }
@@ -298,6 +304,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     <nav id="tabs" class="desktop-nav">
       <button data-tab="shopping" class="active">Shopping List</button>
       <button data-tab="recent">Recent Purchases</button>
+      <button data-tab="mealplan">Meal Plan</button>
       <button data-tab="calendar">Calendar</button>
       <button data-tab="library">Library</button>
       <button data-tab="categories">Categories</button>
@@ -317,6 +324,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     <nav id="nav-drawer-tabs">
       <button data-tab="shopping" type="button">Shopping List</button>
       <button data-tab="recent" type="button">Recent Purchases</button>
+      <button data-tab="mealplan" type="button">Meal Plan</button>
       <button data-tab="calendar" type="button">Calendar</button>
       <button data-tab="library" type="button">Library</button>
       <button data-tab="categories" type="button">Categories</button>
@@ -342,6 +350,19 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <summary>Activity log</summary>
       <div id="shopping-activity" class="activity-log"></div>
     </details>
+  </div>
+
+  <!-- MEAL PLAN -->
+  <div id="panel-mealplan" class="panel">
+    <div class="toolbar">
+      <label>Week</label>
+      <input type="week" id="mealplan-week" aria-label="Select week" style="min-width:140px">
+      <button class="btn-sm" onclick="mealPlanPrevWeek()">&larr;</button>
+      <button class="btn-sm" onclick="mealPlanNextWeek()">→</button>
+      <button class="btn-sm" onclick="mealPlanGoThisWeek()">This week</button>
+    </div>
+    <p style="color:var(--muted);margin:8px 0 12px">Evening meals Monday–Friday. Type and blur to save.</p>
+    <div id="mealplan-content" class="mealplan-grid"></div>
   </div>
 
   <!-- RECENT PURCHASES -->
@@ -553,7 +574,7 @@ document.addEventListener('click', e => {
   syncDrawerActiveTab(tabId);
   closeNavDrawer();
   const loaders = {library: loadLibrary, categories: loadCategories, supermarkets: loadSupermarkets,
-    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases};
+    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases, mealplan: loadMealPlan};
   loaders[tabId]?.();
   if (tabId === 'shopping') {
     clearInterval(window._listRefreshInterval);
@@ -1083,6 +1104,88 @@ async function loadShoppingList() {
       const row = this.closest('.list-item');
       await saveListItemQty(row);
     });
+  });
+}
+
+// ── Meal Plan (Mon–Fri evening meals) ──
+let _mealPlanYear = null, _mealPlanWeek = null;
+
+function getISOWeek(d) {
+  const dt = new Date(d);
+  dt.setHours(0, 0, 0, 0);
+  const thursday = new Date(dt);
+  thursday.setDate(dt.getDate() + 4 - (dt.getDay() || 7));
+  const jan1 = new Date(thursday.getFullYear(), 0, 1);
+  const w = Math.ceil((((thursday - jan1) / 86400000) + 1) / 7);
+  return [thursday.getFullYear(), w];
+}
+
+function mealPlanGetYw() {
+  const inp = document.getElementById('mealplan-week');
+  if (!inp?.value) return getISOWeek(new Date());
+  const [y, w] = inp.value.split('-W').map((x, i) => i === 0 ? parseInt(x, 10) : parseInt(x, 10));
+  return [y, w];
+}
+
+function mealPlanSetInput(y, w) {
+  const inp = document.getElementById('mealplan-week');
+  if (inp) inp.value = `${y}-W${String(w).padStart(2, '0')}`;
+  _mealPlanYear = y;
+  _mealPlanWeek = w;
+}
+
+function mealPlanPrevWeek() {
+  const [y, w] = mealPlanGetYw();
+  if (w <= 1) {
+    mealPlanSetInput(y - 1, 52);
+  } else {
+    mealPlanSetInput(y, w - 1);
+  }
+  loadMealPlan();
+}
+
+function mealPlanNextWeek() {
+  const [y, w] = mealPlanGetYw();
+  if (w >= 52) {
+    mealPlanSetInput(y + 1, 1);
+  } else {
+    mealPlanSetInput(y, w + 1);
+  }
+  loadMealPlan();
+}
+
+function mealPlanGoThisWeek() {
+  const [y, w] = getISOWeek(new Date());
+  mealPlanSetInput(y, w);
+  loadMealPlan();
+}
+
+async function loadMealPlan() {
+  const [y, w] = mealPlanGetYw();
+  mealPlanSetInput(y, w);
+  const entries = await api(`/meal-plan?year=${y}&week=${w}`);
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const byDay = Object.fromEntries(entries.map(e => [e.day, e]));
+  let html = '';
+  for (let day = 1; day <= 5; day++) {
+    const e = byDay[day] || { id: 0, year: y, week: w, day, dinner: '' };
+    const name = dayNames[day - 1];
+    html += `<div class="mealplan-row">
+      <label>${name}</label>
+      <input type="text" value="${escapeHtml(e.dinner || '')}" placeholder="Evening meal…"
+        data-year="${y}" data-week="${w}" data-day="${day}" data-id="${e.id || ''}"
+        onchange="saveMealPlanSlot(this)" onblur="saveMealPlanSlot(this)">
+    </div>`;
+  }
+  document.getElementById('mealplan-content').innerHTML = html;
+}
+
+async function saveMealPlanSlot(inputEl) {
+  const y = inputEl.dataset.year, w = inputEl.dataset.week, day = inputEl.dataset.day;
+  const dinner = (inputEl.value || '').trim();
+  await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
+    method: 'PUT',
+    body: JSON.stringify({ dinner }),
   });
 }
 

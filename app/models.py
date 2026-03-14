@@ -145,3 +145,15 @@ class RepurchaseReminder(Base):
     active = Column(Boolean, default=True)
 
     library_item = relationship("LibraryItem", back_populates="reminders")
+
+
+class MealPlanEntry(Base):
+    """Evening meal (dinner) for a weekday. day 1=Monday .. 5=Friday."""
+    __tablename__ = "meal_plan_entries"
+    __table_args__ = (UniqueConstraint("year", "week", "day", name="uq_meal_plan_year_week_day"),)
+
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer, nullable=False)
+    week = Column(Integer, nullable=False)  # ISO week 1-53
+    day = Column(Integer, nullable=False)   # 1=Monday .. 5=Friday
+    dinner = Column(String(300), nullable=False, default="")  # free text; later: recipe ref

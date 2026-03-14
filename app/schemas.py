@@ -240,3 +240,18 @@ class UserOut(BaseModel):
 class UserLogin(BaseModel):
     name: str
     password: str
+
+
+# ---------- Meal Plan ----------
+
+class MealPlanEntryOut(BaseModel):
+    id: int
+    year: int
+    week: int
+    day: int  # 1=Mon .. 5=Fri
+    dinner: str
+    model_config = {"from_attributes": True}
+
+
+class MealPlanDayUpdate(BaseModel):
+    dinner: str = ""
