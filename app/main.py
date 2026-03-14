@@ -1,5 +1,6 @@
+import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -10,6 +11,9 @@ from app.database import engine, SessionLocal, Base
 from app.config import settings
 from app.seed import seed_database
 from app.routers import categories, library, lists, supermarkets, reminders, users, auth
+from app.ws import ConnectionManager
+
+ws_manager = ConnectionManager()
 
 
 def _run_migrations():
@@ -34,6 +38,13 @@ def _run_migrations():
                 if not any(row[1] == col for row in r):
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_def}"))
                     conn.commit()
+            # list item actor display names (for OpenClaw / API caller identification)
+            for col in ["added_by_display_name", "purchased_by_display_name"]:
+                r = conn.execute(text("PRAGMA table_info(grocery_list_items)"))
+                if not any(row[1] == col for row in r):
+                    conn.execute(text(f"ALTER TABLE grocery_list_items ADD COLUMN {col} VARCHAR(100)"))
+                    conn.commit()
+        # activity_log table (create if not exists via create_all in lifespan)
 
 
 @asynccontextmanager
@@ -46,7 +57,15 @@ async def lifespan(app: FastAPI):
             seed_database(db)
         finally:
             db.close()
+    ws_manager.set_loop(asyncio.get_running_loop())
+    app.state.ws_manager = ws_manager
+    broadcaster = asyncio.create_task(ws_manager.broadcaster_task())
     yield
+    broadcaster.cancel()
+    try:
+        await broadcaster
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(title=settings.app_title, lifespan=lifespan)
@@ -82,3 +101,15 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.websocket("/api/ws")
+async def websocket_list_updates(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        ws_manager.disconnect(websocket)

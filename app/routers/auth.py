@@ -7,10 +7,17 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
 from app.config import settings
 from app.database import get_db
 from app.models import User
 from app.schemas import UserLogin, UserOut
+
+
+class ResetAdminPassword(BaseModel):
+    setup_token: str
+    new_password: str
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -68,4 +75,27 @@ def login(data: UserLogin, response: Response, db: Session = Depends(get_db)):
 def logout(response: Response):
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return {"ok": True}
+
+
+@router.post("/reset-admin-password")
+def reset_admin_password(data: ResetAdminPassword, db: Session = Depends(get_db)):
+    """
+    One-time reset for the Admin user's password when you're locked out.
+    Set GROCERY_SETUP_TOKEN in the environment, then POST with that token and new_password.
+    After logging in, unset GROCERY_SETUP_TOKEN for security.
+    """
+    if not settings.setup_token or not data.setup_token.strip():
+        raise HTTPException(status_code=404, detail="Not available")
+    if data.setup_token.strip() != settings.setup_token:
+        raise HTTPException(status_code=401, detail="Invalid setup token")
+    if len(data.new_password.strip()) < 1:
+        raise HTTPException(status_code=400, detail="Password cannot be empty")
+    admin = db.query(User).filter(User.role == "admin").first()
+    if not admin:
+        admin = db.query(User).filter(User.name == "Admin").first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="No admin user found")
+    admin.password_hash = hash_password(data.new_password.strip())
+    db.commit()
+    return {"ok": True, "message": "Password updated for " + admin.name}
 

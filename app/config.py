@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_title: str = "Grocery List"
     secret_key: str = "change-me-session-secret"
     default_admin_password: str = "mechou"
+    setup_token: str = ""
     seed_on_startup: bool = True
     upload_dir: str = ""
 

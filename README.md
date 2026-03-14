@@ -93,7 +93,7 @@ Key endpoints:
 
 ### OpenClaw / automation
 
-The API works with OpenClaw or any HTTP client. All requests that change data require the **`X-API-Key`** header (user or admin key).
+The API works with OpenClaw or any HTTP client. All requests that change data require the **`X-API-Key`** header (user or admin key). To record **who** performed an action (e.g. which OpenClaw user added or purchased an item), send **`X-User-Name`** with the display name (e.g. `Rik`); it is stored as “added by” / “purchased by” and in the activity log.
 
 | What you want to do | Endpoint | Auth |
 |---------------------|----------|------|

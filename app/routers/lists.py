@@ -1,19 +1,46 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import (
     GroceryList, GroceryListItem, LibraryItem, RepurchaseReminder, User,
-    Category, SupermarketPreset,
+    Category, SupermarketPreset, ActivityLog,
 )
 from app.schemas import (
     GroceryListCreate, GroceryListUpdate, GroceryListOut,
     GroceryListSummary, GroceryListItemOut, RecentPurchaseOut,
-    AddItemToList, UpdateListItem,
+    AddItemToList, UpdateListItem, ActivityOut,
 )
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/lists", tags=["lists"])
+
+
+def _log_activity(
+    db: Session,
+    list_id: int,
+    item_id: int | None,
+    action: str,
+    user: User,
+    actor_display_name: str | None,
+    details: str | None = None,
+):
+    db.add(
+        ActivityLog(
+            list_id=list_id,
+            item_id=item_id,
+            action=action,
+            actor_id=user.id,
+            actor_display_name=actor_display_name or user.name,
+            details=details,
+        )
+    )
+
+
+def _notify_list_updated(request: Request, list_id: int) -> None:
+    manager = getattr(request.app.state, "ws_manager", None)
+    if manager:
+        manager.notify_list_updated(list_id)
 
 
 @router.get("/recent-purchases", response_model=list[RecentPurchaseOut])
@@ -73,6 +100,19 @@ def get_expirations(
             end = date_cls(year, month + 1, 1)
         q = q.filter(GroceryListItem.expiration_date >= start, GroceryListItem.expiration_date < end)
     return q.order_by(GroceryListItem.expiration_date).all()
+
+
+@router.get("/activity", response_model=list[ActivityOut])
+def get_activity(
+    list_id: int | None = Query(None, description="Filter by list"),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """List activity log (add/update/purchase/remove). Must be declared before /{list_id}."""
+    q = db.query(ActivityLog).order_by(ActivityLog.created_at.desc())
+    if list_id is not None:
+        q = q.filter(ActivityLog.list_id == list_id)
+    return q.limit(limit).all()
 
 
 @router.get("", response_model=list[GroceryListSummary])
@@ -159,7 +199,14 @@ def delete_list(list_id: int, user: User = Depends(get_current_user), db: Sessio
 # ---- List Items ----
 
 @router.post("/{list_id}/items", response_model=GroceryListItemOut, status_code=201)
-def add_item(list_id: int, data: AddItemToList, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def add_item(
+    list_id: int,
+    data: AddItemToList,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_user_name: str | None = Header(None, alias="X-User-Name"),
+):
     gl = db.get(GroceryList, list_id)
     if not gl:
         raise HTTPException(404, "List not found")
@@ -184,6 +231,9 @@ def add_item(list_id: int, data: AddItemToList, user: User = Depends(get_current
             existing.quantity = data.quantity or lib_item.default_quantity
             existing.purchased_at = None
             existing.purchased_by_id = None
+            existing.added_by_id = user.id
+            existing.added_by_display_name = (x_user_name.strip() if x_user_name else None)
+            _log_activity(db, list_id, existing.id, "re_add", user, x_user_name, lib_item.name)
             db.commit()
             db.refresh(existing)
             return existing
@@ -195,11 +245,15 @@ def add_item(list_id: int, data: AddItemToList, user: User = Depends(get_current
         quantity=data.quantity or lib_item.default_quantity,
         unit=data.unit or lib_item.unit,
         added_by_id=user.id,
+        added_by_display_name=(x_user_name.strip() if x_user_name else None),
         expiration_date=data.expiration_date,
         notes=data.notes,
     )
     db.add(item)
+    db.flush()
+    _log_activity(db, list_id, item.id, "add", user, x_user_name, lib_item.name)
     db.commit()
+    _notify_list_updated(request, list_id)
     db.refresh(item)
     # Reload with relationships for response
     item = (
@@ -217,10 +271,12 @@ def add_item(list_id: int, data: AddItemToList, user: User = Depends(get_current
 @router.post("/{list_id}/items/by-name", response_model=GroceryListItemOut, status_code=201)
 def add_item_by_name(
     list_id: int,
+    request: Request,
     name: str = Query(...),
     quantity: float | None = None,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    x_user_name: str | None = Header(None, alias="X-User-Name"),
 ):
     """Add an item by name. Matches library items by name; creates a new library item if none match."""
     gl = db.get(GroceryList, list_id)
@@ -264,7 +320,11 @@ def add_item_by_name(
             existing.quantity = quantity or lib_item.default_quantity
             existing.purchased_at = None
             existing.purchased_by_id = None
+            existing.added_by_id = user.id
+            existing.added_by_display_name = (x_user_name.strip() if x_user_name else None)
+            _log_activity(db, list_id, existing.id, "re_add", user, x_user_name, lib_item.name)
             db.commit()
+            _notify_list_updated(request, list_id)
             db.refresh(existing)
             return existing
         raise HTTPException(409, f"'{lib_item.name}' is already on this list")
@@ -275,9 +335,13 @@ def add_item_by_name(
         quantity=quantity or lib_item.default_quantity,
         unit=lib_item.unit,
         added_by_id=user.id,
+        added_by_display_name=(x_user_name.strip() if x_user_name else None),
     )
     db.add(item)
+    db.flush()
+    _log_activity(db, list_id, item.id, "add", user, x_user_name, lib_item.name)
     db.commit()
+    _notify_list_updated(request, list_id)
     db.refresh(item)
     item = (
         db.query(GroceryListItem)
@@ -292,7 +356,15 @@ def add_item_by_name(
 
 
 @router.put("/{list_id}/items/{item_id}", response_model=GroceryListItemOut)
-def update_item(list_id: int, item_id: int, data: UpdateListItem, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_item(
+    list_id: int,
+    item_id: int,
+    data: UpdateListItem,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_user_name: str | None = Header(None, alias="X-User-Name"),
+):
     item = (
         db.query(GroceryListItem)
         .options(
@@ -305,15 +377,26 @@ def update_item(list_id: int, item_id: int, data: UpdateListItem, user: User = D
     )
     if not item:
         raise HTTPException(404, "List item not found")
-    for k, v in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    details_parts = [f"{k}={v}" for k, v in payload.items()]
+    for k, v in payload.items():
         setattr(item, k, v)
+    _log_activity(db, list_id, item_id, "update", user, x_user_name, ", ".join(details_parts) if details_parts else None)
     db.commit()
+    _notify_list_updated(request, list_id)
     db.refresh(item)
     return item
 
 
 @router.patch("/{list_id}/items/{item_id}/purchase", response_model=GroceryListItemOut)
-def purchase_item(list_id: int, item_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def purchase_item(
+    list_id: int,
+    item_id: int,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_user_name: str | None = Header(None, alias="X-User-Name"),
+):
     item = (
         db.query(GroceryListItem)
         .options(
@@ -329,7 +412,9 @@ def purchase_item(list_id: int, item_id: int, user: User = Depends(get_current_u
 
     item.status = "purchased"
     item.purchased_by_id = user.id
+    item.purchased_by_display_name = (x_user_name.strip() if x_user_name else None)
     item.purchased_at = datetime.utcnow()
+    _log_activity(db, list_id, item_id, "purchase", user, x_user_name, item.library_item.name if item.library_item else None)
 
     reminder = (
         db.query(RepurchaseReminder)
@@ -341,14 +426,30 @@ def purchase_item(list_id: int, item_id: int, user: User = Depends(get_current_u
         reminder.next_due = datetime.utcnow() + timedelta(days=reminder.interval_days)
 
     db.commit()
+    _notify_list_updated(request, list_id)
     db.refresh(item)
     return item
 
 
 @router.delete("/{list_id}/items/{item_id}", status_code=204)
-def remove_item(list_id: int, item_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    item = db.query(GroceryListItem).filter_by(id=item_id, list_id=list_id).first()
+def remove_item(
+    list_id: int,
+    item_id: int,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_user_name: str | None = Header(None, alias="X-User-Name"),
+):
+    item = (
+        db.query(GroceryListItem)
+        .options(joinedload(GroceryListItem.library_item))
+        .filter_by(id=item_id, list_id=list_id)
+        .first()
+    )
     if not item:
         raise HTTPException(404, "List item not found")
+    item_name = item.library_item.name if item.library_item else None
+    _log_activity(db, list_id, item_id, "remove", user, x_user_name, item_name)
     db.delete(item)
     db.commit()
+    _notify_list_updated(request, list_id)

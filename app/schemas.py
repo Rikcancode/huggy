@@ -94,7 +94,9 @@ class GroceryListItemOut(BaseModel):
     unit: str
     status: str
     added_by_id: int | None
+    added_by_display_name: str | None = None
     purchased_by_id: int | None
+    purchased_by_display_name: str | None = None
     purchased_at: datetime | None
     expiration_date: date | None
     notes: str | None
@@ -102,6 +104,18 @@ class GroceryListItemOut(BaseModel):
     library_item: LibraryItemOut | None = None
     added_by: UserRef | None = None
     purchased_by: UserRef | None = None
+    model_config = {"from_attributes": True}
+
+
+class ActivityOut(BaseModel):
+    id: int
+    list_id: int
+    item_id: int | None
+    action: str
+    actor_id: int | None
+    actor_display_name: str | None
+    details: str | None
+    created_at: datetime
     model_config = {"from_attributes": True}
 
 

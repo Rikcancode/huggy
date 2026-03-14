@@ -108,11 +108,28 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 .list-group { margin-bottom: 20px; }
 .list-group h3 { font-size: .95rem; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
-.list-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+.list-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); transition: background .3s; }
 .list-item.purchased { opacity: .5; text-decoration: line-through; }
+.list-item.list-item-highlight { background: var(--accent); color: #fff; }
+.list-item.list-item-highlight .qty, .list-item.list-item-highlight span[style*="muted"] { color: rgba(255,255,255,.9); }
+.activity-details summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+.activity-log { font-size: .8rem; max-height: 200px; overflow-y: auto; margin-top: 8px; }
+.activity-log div { padding: 4px 0; border-bottom: 1px solid var(--border); }
 .list-item .qty { color: var(--accent); font-weight: 600; white-space: nowrap; }
 .list-item .qty-edit { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.list-item .qty-edit .list-qty-wrap { display: flex; align-items: center; }
+.list-item .qty-edit .list-qty-minus, .list-item .qty-edit .list-qty-plus {
+  width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 0;
+  border: 1px solid var(--border, #ccc); border-radius: 6px;
+  background: var(--bg-2, #f0f0f0); color: var(--accent, #7b61ff);
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+}
+.list-item .qty-edit .list-qty-minus:hover, .list-item .qty-edit .list-qty-plus:hover {
+  background: var(--bg-3, #e0e0e0); color: var(--accent, #7b61ff);
+}
 .list-item .qty-edit input, .list-item .qty-edit select { margin: 0; }
+.list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .name { flex: 1; min-width: 0; }
 .list-item .actions { display: flex; gap: 4px; }
 
@@ -205,6 +222,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .add-overlay-qty input, .add-overlay-qty select { width: 64px; padding: 6px 8px; font-size: .8rem; }
 .add-overlay-qty .add-qty { width: 48px; text-align: center; }
 .add-overlay-qty .add-unit { width: 82px; }
+/* Hide number input spinners (use −/+ buttons instead) */
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .add-overlay-item .badge-added { padding: 8px 14px; border-radius: var(--radius); background: var(--green); color: #000;
   font-size: .85rem; font-weight: 600; }
 .add-overlay-empty { padding: 24px 16px; text-align: center; color: var(--muted); }
@@ -213,17 +234,28 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 <body>
 <div id="login-screen" style="max-width:400px;margin:40px auto;padding:24px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:none">
   <h1 style="font-family:'Fredoka',sans-serif;font-size:1.6rem;margin-bottom:12px">Mechou login</h1>
-  <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">Sign in with your Mechou user name and password.</p>
-  <div class="form-row"><div>
-    <label>Name</label>
-    <input id="login-name" autocomplete="username">
-  </div></div>
-  <div class="form-row"><div>
-    <label>Password</label>
-    <input id="login-pass" type="password" autocomplete="current-password">
-  </div></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-    <button class="btn-primary" id="login-submit">Sign in</button>
+  <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">Sign in with your username and password. Default is <strong>Admin</strong> / <strong>mechou</strong> (username is case-sensitive).</p>
+  <form id="login-form" onsubmit="doLogin(); return false;">
+    <div class="form-row"><div>
+      <label for="login-name">Username</label>
+      <input id="login-name" name="username" autocomplete="username" required placeholder="Your username">
+    </div></div>
+    <div class="form-row"><div>
+      <label for="login-pass">Password</label>
+      <input id="login-pass" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
+    </div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button type="submit" class="btn-primary" id="login-submit">Sign in</button>
+    </div>
+    <p style="margin-top:16px;font-size:.85rem">
+      <button type="button" class="btn-sm" id="login-show-reset" style="color:var(--muted)">Reset admin password…</button>
+    </p>
+  </form>
+  <div id="login-reset-box" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:8px">Set a new password for the Admin user. You need the setup token (from <code>GROCERY_SETUP_TOKEN</code> on the server).</p>
+    <div class="form-row"><div><label>Setup token</label><input id="reset-token" type="password" autocomplete="off" placeholder="Server setup token"></div></div>
+    <div class="form-row"><div><label>New password</label><input id="reset-new-password" type="password" autocomplete="new-password" placeholder="New password"></div></div>
+    <div style="margin-top:8px"><button type="button" class="btn-primary btn-sm" id="login-do-reset">Reset password</button> <button type="button" class="btn-sm" id="login-hide-reset">Cancel</button></div>
   </div>
 </div>
 
@@ -293,6 +325,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
     </div>
     <datalist id="lib-suggestions"></datalist>
     <div id="shopping-content"></div>
+    <details id="shopping-activity-details" class="activity-details" style="margin-top:16px">
+      <summary>Activity log</summary>
+      <div id="shopping-activity" class="activity-log"></div>
+    </details>
   </div>
 
   <!-- RECENT PURCHASES -->
@@ -423,7 +459,7 @@ async function ensureLoggedIn() {
 async function doLogin() {
   const name = document.getElementById('login-name').value.trim();
   const password = document.getElementById('login-pass').value;
-  if (!name || !password) { toast('Enter name and password'); return; }
+  if (!name || !password) { toast('Enter username and password'); return; }
   try {
     const r = await fetch('/auth/login', {
       method: 'POST',
@@ -440,6 +476,11 @@ async function doLogin() {
     await ensureLoggedIn();
     loadCurrentUser();
     loadLists();
+    if (document.getElementById('panel-shopping').classList.contains('active')) {
+      clearInterval(window._listRefreshInterval);
+      window._listRefreshInterval = setInterval(() => { if (document.visibilityState === 'visible') loadShoppingList(); }, 10000);
+      connectListWS();
+    }
   } catch (e) {
     toast(e.message || 'Login failed');
   }
@@ -501,7 +542,49 @@ document.addEventListener('click', e => {
   const loaders = {library: loadLibrary, categories: loadCategories, supermarkets: loadSupermarkets,
     reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases};
   loaders[tabId]?.();
+  if (tabId === 'shopping') {
+    clearInterval(window._listRefreshInterval);
+    window._listRefreshInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') loadShoppingList();
+    }, 10000);
+    connectListWS();
+  } else {
+    clearInterval(window._listRefreshInterval);
+    window._listRefreshInterval = null;
+    disconnectListWS();
+  }
 });
+
+function connectListWS() {
+  if (window._listWs && window._listWs.readyState === WebSocket.OPEN) return;
+  disconnectListWS();
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${location.host}/api/ws`;
+  try {
+    const ws = new WebSocket(wsUrl);
+    ws.onmessage = function(ev) {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.type === 'list_updated') {
+          const listId = document.getElementById('list-select')?.value;
+          if (listId && String(data.list_id) === listId) {
+            loadShoppingList();
+            if (data.list_id) loadActivity(String(data.list_id));
+          }
+        }
+      } catch (_) {}
+    };
+    ws.onclose = function() { window._listWs = null; };
+    ws.onerror = function() { window._listWs = null; };
+    window._listWs = ws;
+  } catch (_) {}
+}
+function disconnectListWS() {
+  if (window._listWs) {
+    try { window._listWs.close(); } catch (_) {}
+    window._listWs = null;
+  }
+}
 
 // ── Current user for drawer ──
 let currentUserName = null;
@@ -826,11 +909,26 @@ document.addEventListener('keydown', function(e) {
 
 async function loadShoppingList() {
   const listId = document.getElementById('list-select').value;
-  if (!listId) { document.getElementById('shopping-content').innerHTML = ''; return; }
+  if (!listId) {
+    document.getElementById('shopping-content').innerHTML = '';
+    document.getElementById('shopping-activity').innerHTML = '';
+    return;
+  }
   const superId = document.getElementById('supermarket-select').value;
   let url = `/lists/${listId}`;
   if (superId) url += `?supermarket_id=${superId}`;
   const list = await api(url);
+
+  const prev = (window._lastListState?.listId === listId && window._lastListState?.items) ? window._lastListState.items : {};
+  const changedIds = new Set();
+  const isRefresh = Object.keys(prev).length > 0;
+  if (isRefresh) {
+    list.items.forEach(i => {
+      const p = prev[i.id];
+      if (!p || p.q !== i.quantity || p.s !== i.status) changedIds.add(i.id);
+    });
+  }
+  window._lastListState = { listId, items: Object.fromEntries(list.items.map(i => [i.id, { q: i.quantity, s: i.status }])) };
 
   const pending = list.items.filter(i => i.status === 'pending');
   const purchased = list.items.filter(i => i.status === 'purchased');
@@ -848,14 +946,19 @@ async function loadShoppingList() {
   for (const [cat, items] of Object.entries(grouped)) {
     html += `<div class="list-group"><h3>${cat}</h3>`;
     items.forEach(i => {
+      const hl = changedIds.has(i.id) ? ' list-item-highlight' : '';
       const icon = i.library_item?.icon || '';
       const thumb = i.library_item?.image_url ? `<img src="${i.library_item.image_url}" class="item-thumb" alt="">` : '';
-      const addedBy = i.added_by ? ` <span style="font-size:.75rem;color:var(--muted)">added by ${i.added_by.name}</span>` : '';
-      html += `<div class="list-item" data-item-id="${i.id}">
+      const addedBy = (i.added_by_display_name || i.added_by?.name) ? ` <span style="font-size:.75rem;color:var(--muted)">added by ${i.added_by_display_name || i.added_by?.name}</span>` : '';
+      html += `<div class="list-item${hl}" data-item-id="${i.id}">
         ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
         <span class="qty-edit">
-          <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}" style="width:56px;padding:4px 6px">
-          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}" style="width:72px;padding:4px 6px">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+          <span class="list-qty-wrap">
+            <button type="button" class="list-qty-minus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Decrease">−</button>
+            <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}">
+            <button type="button" class="list-qty-plus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Increase">+</button>
+          </span>
+          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}</select>
         </span>
         <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}${addedBy}</span>
         <span class="actions">
@@ -869,9 +972,10 @@ async function loadShoppingList() {
   if (purchased.length) {
     html += `<div class="list-group"><h3>✅ Purchased</h3>`;
     purchased.forEach(i => {
+      const hl = changedIds.has(i.id) ? ' list-item-highlight' : '';
       const icon = i.library_item?.icon || '';
-      const purchasedBy = i.purchased_by ? ` <span style="font-size:.75rem;color:var(--muted)">by ${i.purchased_by.name}</span>` : '';
-      html += `<div class="list-item purchased">
+      const purchasedBy = (i.purchased_by_display_name || i.purchased_by?.name) ? ` <span style="font-size:.75rem;color:var(--muted)">by ${i.purchased_by_display_name || i.purchased_by?.name}</span>` : '';
+      html += `<div class="list-item purchased${hl}">
         ${icon ? `<span class="item-icon">${icon}</span>` : ''}
         <span class="qty">${i.quantity} ${i.unit}</span>
         <span class="name">${i.library_item?.name || '?'}${purchasedBy}</span>
@@ -884,19 +988,56 @@ async function loadShoppingList() {
 
   if (!list.items.length) html = '<p style="color:var(--muted)">List is empty. Add items above.</p>';
   document.getElementById('shopping-content').innerHTML = html;
+  if (changedIds.size) {
+    setTimeout(() => document.querySelectorAll('.list-item-highlight').forEach(el => el.classList.remove('list-item-highlight')), 2500);
+  }
+  loadActivity(listId);
+
+  function applyListQtyStep(row, delta) {
+    const qtyInput = row?.querySelector('.qty-input');
+    const unitSelect = row?.querySelector('.unit-select');
+    if (!qtyInput || !unitSelect) return;
+    const step = UNIT_STEP[unitSelect.value] ?? 1;
+    const min = 0.01;
+    let val = parseFloat(qtyInput.value);
+    if (Number.isNaN(val)) val = min;
+    val = Math.max(min, val + delta * step);
+    val = Math.round(val * 100) / 100;
+    qtyInput.value = val;
+    return { qty: val, unit: unitSelect.value };
+  }
+  async function saveListItemQty(row) {
+    const listId = row?.querySelector('.qty-input')?.dataset?.listId;
+    const itemId = row?.querySelector('.qty-input')?.dataset?.itemId;
+    if (!listId || !itemId) return;
+    const qtyInput = row.querySelector('.qty-input');
+    const unitSelect = row.querySelector('.unit-select');
+    const qty = parseFloat(qtyInput?.value) || 0.01;
+    const unit = unitSelect?.value || 'unit';
+    try {
+      await api(`/lists/${listId}/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ quantity: qty, unit }) });
+      toast('Updated');
+    } catch (e) { toast(e.message); }
+  }
+
+  document.getElementById('shopping-content').querySelectorAll('.list-qty-minus').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const row = this.closest('.list-item');
+      applyListQtyStep(row, -1);
+      await saveListItemQty(row);
+    });
+  });
+  document.getElementById('shopping-content').querySelectorAll('.list-qty-plus').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const row = this.closest('.list-item');
+      applyListQtyStep(row, 1);
+      await saveListItemQty(row);
+    });
+  });
   document.getElementById('shopping-content').querySelectorAll('.qty-input, .unit-select').forEach(el => {
     el.addEventListener('change', async function() {
-      const listId = this.dataset.listId;
-      const itemId = this.dataset.itemId;
       const row = this.closest('.list-item');
-      const qtyInput = row.querySelector('.qty-input');
-      const unitSelect = row.querySelector('.unit-select');
-      const qty = parseFloat(qtyInput?.value) || 1;
-      const unit = unitSelect?.value || 'unit';
-      try {
-        await api(`/lists/${listId}/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ quantity: qty, unit }) });
-        toast('Updated');
-      } catch (e) { toast(e.message); }
+      await saveListItemQty(row);
     });
   });
 }
@@ -965,6 +1106,23 @@ async function purchaseItem(listId, itemId) {
 async function removeItem(listId, itemId) {
   await api(`/lists/${listId}/items/${itemId}`, {method: 'DELETE'});
   loadShoppingList();
+}
+
+async function loadActivity(listId) {
+  const el = document.getElementById('shopping-activity');
+  if (!el) return;
+  try {
+    const data = await api(`/lists/activity?list_id=${listId}&limit=30`);
+    if (!data.length) { el.innerHTML = '<p style="color:var(--muted)">No activity yet.</p>'; return; }
+    const actionLabel = { add: 'added', re_add: 're-added', update: 'updated', purchase: 'purchased', remove: 'removed' };
+    el.innerHTML = data.map(a => {
+      const who = a.actor_display_name || 'Someone';
+      const label = actionLabel[a.action] || a.action;
+      const detail = a.details ? ` "${a.details}"` : '';
+      const when = a.created_at ? new Date(a.created_at).toLocaleString() : '';
+      return `<div>${who} ${label}${detail} — ${when}</div>`;
+    }).join('');
+  } catch (_) { el.innerHTML = ''; }
 }
 
 async function addItemByName() {
@@ -1060,14 +1218,17 @@ async function loadUsers() {
 
 function showUserModal() {
   modal('New User', `
-    <div class="form-row"><div><label>Name</label><input id="m-user-name"></div></div>
+    <div class="form-row"><div><label>Name</label><input id="m-user-name" autocomplete="off"></div></div>
+    <div class="form-row"><div><label>Password</label><input id="m-user-password" type="password" autocomplete="new-password" placeholder="Optional for API-only users"></div></div>
     <div class="form-row">
       <div><label>Role</label><select id="m-user-role"><option>user</option><option>admin</option></select></div>
       <div><label>Language</label><select id="m-user-lang"><option value="en">English</option>
         <option value="da">Danish</option><option value="it">Italian</option></select></div></div>
   `, async () => {
-    await api('/users', {method: 'POST', body: JSON.stringify({
-      name: gv('m-user-name'), role: gv('m-user-role'), language: gv('m-user-lang')})});
+    const body = { name: gv('m-user-name'), role: gv('m-user-role'), language: gv('m-user-lang') };
+    const pwd = document.getElementById('m-user-password')?.value?.trim();
+    if (pwd) body.password = pwd;
+    await api('/users', {method: 'POST', body: JSON.stringify(body)});
     closeModal(); toast('Saved'); loadUsers();
   });
 }
@@ -1152,6 +1313,30 @@ document.getElementById('login-submit').addEventListener('click', doLogin);
 document.getElementById('login-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
+document.getElementById('login-show-reset').addEventListener('click', function() {
+  document.getElementById('login-reset-box').style.display = 'block';
+});
+document.getElementById('login-hide-reset').addEventListener('click', function() {
+  document.getElementById('login-reset-box').style.display = 'none';
+});
+document.getElementById('login-do-reset').addEventListener('click', async function() {
+  const token = document.getElementById('reset-token').value.trim();
+  const newPassword = document.getElementById('reset-new-password').value;
+  if (!token || !newPassword) { toast('Enter setup token and new password'); return; }
+  try {
+    const r = await fetch('/auth/reset-admin-password', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ setup_token: token, new_password: newPassword })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || 'Reset failed');
+    toast('Password updated. Sign in with Admin and your new password.');
+    document.getElementById('login-reset-box').style.display = 'none';
+    document.getElementById('reset-token').value = '';
+    document.getElementById('reset-new-password').value = '';
+  } catch (e) { toast(e.message); }
+});
 
 (async () => {
   const ok = await ensureLoggedIn();
@@ -1159,6 +1344,13 @@ document.getElementById('login-pass').addEventListener('keydown', e => {
     syncDrawerActiveTab('shopping');
     loadCurrentUser();
     loadLists();
+    if (document.getElementById('panel-shopping').classList.contains('active')) {
+      clearInterval(window._listRefreshInterval);
+      window._listRefreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') loadShoppingList();
+      }, 10000);
+      connectListWS();
+    }
   }
 })();
 </script>

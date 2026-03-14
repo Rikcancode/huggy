@@ -98,7 +98,9 @@ class GroceryListItem(Base):
     unit = Column(String(20), nullable=False)
     status = Column(String(20), nullable=False, default="pending")  # pending | purchased
     added_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    added_by_display_name = Column(String(100), nullable=True)
     purchased_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    purchased_by_display_name = Column(String(100), nullable=True)
     purchased_at = Column(DateTime, nullable=True)
     expiration_date = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
@@ -108,6 +110,19 @@ class GroceryListItem(Base):
     library_item = relationship("LibraryItem")
     added_by = relationship("User", foreign_keys=[added_by_id])
     purchased_by = relationship("User", foreign_keys=[purchased_by_id])
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_log"
+
+    id = Column(Integer, primary_key=True)
+    list_id = Column(Integer, ForeignKey("grocery_lists.id", ondelete="CASCADE"), nullable=False)
+    item_id = Column(Integer, nullable=True)
+    action = Column(String(50), nullable=False)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    actor_display_name = Column(String(100), nullable=True)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class SupermarketPreset(Base):
