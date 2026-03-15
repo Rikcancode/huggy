@@ -474,11 +474,11 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 <div id="add-items-overlay" class="add-overlay" style="display:none" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Add items to list">
   <div class="add-overlay-header">
     <span class="add-overlay-title">Add items</span>
-    <button type="button" class="btn-primary btn-sm add-overlay-new-item" id="add-overlay-new-item">+ New item</button>
-    <button type="button" class="add-overlay-close" id="add-overlay-close" aria-label="Close">✕</button>
+    <button type="button" class="btn-primary btn-sm add-overlay-new-item" id="add-overlay-new-item" name="add-overlay-new-item" aria-label="Create new library item">+ New item</button>
+    <button type="button" class="add-overlay-close" id="add-overlay-close" name="add-overlay-close" aria-label="Close">✕</button>
   </div>
   <div class="add-overlay-search-wrap">
-    <input type="search" class="add-overlay-search" id="add-overlay-search" placeholder="Search items…" autocomplete="off" aria-label="Search items to add">
+    <input type="search" class="add-overlay-search" id="add-overlay-search" name="add-overlay-search" placeholder="Search items…" autocomplete="off" aria-label="Search items to add">
   </div>
   <div class="add-overlay-list" id="add-overlay-list"></div>
 </div>
@@ -1168,18 +1168,16 @@ async function addItemByNameFromOverlay(name) {
 }
 
 document.getElementById('btn-open-add-overlay').addEventListener('click', openAddItemsOverlay);
-document.getElementById('add-overlay-close').addEventListener('click', closeAddItemsOverlay);
-document.getElementById('add-overlay-new-item').addEventListener('click', function() {
-  showItemModal();
+document.getElementById('add-items-overlay').addEventListener('click', function(e) {
+  if (e.target === this) { closeAddItemsOverlay(); return; }
+  if (e.target.id === 'add-overlay-close' || e.target.closest('#add-overlay-close')) { closeAddItemsOverlay(); return; }
+  if (e.target.id === 'add-overlay-new-item' || e.target.closest('#add-overlay-new-item')) { e.preventDefault(); showItemModal(); return; }
 });
 document.getElementById('add-overlay-search').addEventListener('input', function() {
   renderAddItemsList(this.value);
 });
 document.getElementById('add-overlay-search').addEventListener('keydown', function(e) {
   if (e.key === 'Escape') { this.value = ''; renderAddItemsList(''); this.blur(); }
-});
-document.getElementById('add-items-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeAddItemsOverlay();
 });
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && document.getElementById('add-items-overlay').style.display === 'flex')
