@@ -150,6 +150,17 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .sounds-toggle input:checked + .toggle-track { background: var(--accent); }
 .sounds-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
 .sounds-toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.icon-picker-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.icon-picker-row label { margin-right: 4px; }
+.icon-preview { font-size: 1.8rem; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.emoji-picker-panel { margin-top: 8px; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.emoji-picker-search { width: 100%; padding: 8px 12px; margin-bottom: 10px; border-radius: var(--radius); border: 1px solid var(--border); font-size: 0.95rem; }
+.emoji-picker-search:focus { outline: none; border-color: var(--accent); }
+.emoji-picker-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto; }
+.emoji-picker-grid button { width: 40px; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 1.4rem; cursor: pointer; transition: background .15s, border-color .15s; }
+.emoji-picker-grid button:hover { background: var(--border); border-color: var(--accent); }
+.emoji-picker-empty { color: var(--muted); font-size: .9rem; padding: 8px 0; }
 .list-item .unit-select { width: 72px; flex-shrink: 0; padding: 4px 6px; font-size: 0.8rem; }
 .list-item .actions { display: flex; gap: 4px; }
 
@@ -411,7 +422,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <select id="lib-cat-filter" onchange="loadLibrary()" style="max-width:200px">
         <option value="">All categories</option>
       </select>
-      <button class="btn-primary btn-sm" onclick="showItemModal()">+ Add Item</button>
+      <button class="btn-primary btn-sm" onclick="showItemModal()">+ New item</button>
     </div>
     <table><thead><tr>
       <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>Created by</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
@@ -461,6 +472,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 <div id="add-items-overlay" class="add-overlay" style="display:none" aria-hidden="true">
   <div class="add-overlay-header">
     <span class="add-overlay-title">Add items</span>
+    <button type="button" class="btn-primary btn-sm add-overlay-new-item" id="add-overlay-new-item">+ New item</button>
     <button type="button" class="add-overlay-close" id="add-overlay-close" aria-label="Close">✕</button>
   </div>
   <div class="add-overlay-search-wrap">
@@ -518,6 +530,20 @@ function itemDisplayIcon(libItem) {
   const suggested = suggestIconFromName(libItem.name);
   if (suggested) return suggested;
   return libItem.category?.icon || '📦';
+}
+
+const EMOJI_PICKER_LIST = (() => {
+  const emojiToKeywords = {};
+  Object.entries(NAME_TO_EMOJI).forEach(([kw, em]) => {
+    if (!emojiToKeywords[em]) emojiToKeywords[em] = [];
+    emojiToKeywords[em].push(kw);
+  });
+  return Object.entries(emojiToKeywords).map(([emoji, keywords]) => ({ emoji, keywords }));
+})();
+function filterEmojiPickerList(q) {
+  const lower = (q || '').toLowerCase().trim();
+  if (!lower) return EMOJI_PICKER_LIST;
+  return EMOJI_PICKER_LIST.filter(x => x.keywords.some(k => k.includes(lower)));
 }
 
 let allCategories = [], allLibrary = [], allSupermarkets = [];
@@ -775,6 +801,10 @@ async function loadLibrary() {
     <button class="btn-sm btn-danger" onclick="delItem(${i.id})">✕</button></td>
   </tr>`).join('');
   updateSuggestions();
+  if (document.getElementById('add-items-overlay')?.style.display === 'flex') {
+    const searchEl = document.getElementById('add-overlay-search');
+    renderAddItemsList(searchEl ? searchEl.value : '');
+  }
 }
 
 let pendingImageFile = null;
@@ -784,8 +814,17 @@ function showItemModal(item = null) {
   const hasImg = item?.image_url;
   modal(item ? 'Edit Item' : 'New Item', `
     <div class="form-row">
-      <div style="flex:0 0 80px"><label>Icon</label><input id="m-icon" value="${item?.icon || ''}" style="font-size:1.5rem;text-align:center"></div>
-      <div><label>Name</label><input id="m-name" value="${item?.name || ''}"></div>
+      <div class="icon-picker-row">
+        <label>Icon</label>
+        <span id="m-icon-preview" class="icon-preview" aria-hidden="true">${item?.icon || '📦'}</span>
+        <input type="hidden" id="m-icon" value="${item?.icon || ''}">
+        <button type="button" class="btn-sm" id="m-pick-icon-btn">Pick icon…</button>
+      </div>
+      <div><label>Name</label><input id="m-name" value="${item?.name || ''}" placeholder="Item name"></div>
+    </div>
+    <div id="emoji-picker-panel" class="emoji-picker-panel" style="display:none">
+      <input type="text" id="emoji-picker-search" placeholder="Type a word (e.g. milk, fruit)…" class="emoji-picker-search" autocomplete="off">
+      <div id="emoji-picker-grid" class="emoji-picker-grid"></div>
     </div>
     <div class="form-row">
       <div><label>Category</label><select id="m-cat">${allCategories.map(c =>
@@ -826,14 +865,56 @@ function showItemModal(item = null) {
   setTimeout(() => {
     const nameEl = document.getElementById('m-name');
     const iconEl = document.getElementById('m-icon');
-    if (!nameEl || !iconEl) return;
-    const suggest = () => {
-      const emoji = suggestIconFromName(nameEl.value);
-      if (emoji && !iconEl.value) iconEl.value = emoji;
-    };
-    nameEl.addEventListener('input', suggest);
-    nameEl.addEventListener('blur', suggest);
-    if (!item?.icon && nameEl.value) suggest();
+    const iconPreview = document.getElementById('m-icon-preview');
+    const pickBtn = document.getElementById('m-pick-icon-btn');
+    const panel = document.getElementById('emoji-picker-panel');
+    const searchEl = document.getElementById('emoji-picker-search');
+    const gridEl = document.getElementById('emoji-picker-grid');
+
+    function setIcon(val) {
+      if (iconEl) iconEl.value = val || '';
+      if (iconPreview) iconPreview.textContent = val || '📦';
+    }
+    function renderEmojiGrid(q) {
+      if (!gridEl) return;
+      const list = filterEmojiPickerList(q);
+      if (!list.length) {
+        gridEl.innerHTML = '<span class="emoji-picker-empty">No matching icons. Try another word.</span>';
+        return;
+      }
+      gridEl.innerHTML = list.map(({ emoji }) =>
+        `<button type="button" class="emoji-pick-btn" data-emoji="${emoji}" title="Use this icon">${emoji}</button>`
+      ).join('');
+      gridEl.querySelectorAll('.emoji-pick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setIcon(btn.getAttribute('data-emoji'));
+          if (panel) panel.style.display = 'none';
+        });
+      });
+    }
+
+    if (pickBtn && panel && searchEl && gridEl) {
+      pickBtn.addEventListener('click', () => {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') {
+          searchEl.value = '';
+          renderEmojiGrid('');
+          searchEl.focus();
+        }
+      });
+      searchEl.addEventListener('input', () => renderEmojiGrid(searchEl.value));
+      searchEl.addEventListener('keydown', (e) => { if (e.key === 'Escape') panel.style.display = 'none'; });
+    }
+
+    if (nameEl && iconEl && iconPreview) {
+      const suggest = () => {
+        const emoji = suggestIconFromName(nameEl.value);
+        if (emoji && !iconEl.value) setIcon(emoji);
+      };
+      nameEl.addEventListener('input', suggest);
+      nameEl.addEventListener('blur', suggest);
+      if (!item?.icon && nameEl.value) suggest();
+    }
   }, 0);
 }
 
@@ -1055,6 +1136,9 @@ async function addItemByNameFromOverlay(name) {
 
 document.getElementById('btn-open-add-overlay').addEventListener('click', openAddItemsOverlay);
 document.getElementById('add-overlay-close').addEventListener('click', closeAddItemsOverlay);
+document.getElementById('add-overlay-new-item').addEventListener('click', function() {
+  showItemModal();
+});
 document.getElementById('add-overlay-search').addEventListener('input', function() {
   renderAddItemsList(this.value);
 });
