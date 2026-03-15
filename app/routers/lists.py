@@ -390,6 +390,10 @@ def update_item(
     if not item:
         raise HTTPException(404, "List item not found")
     payload = data.model_dump(exclude_unset=True)
+    if payload.get("status") == "pending":
+        item.purchased_at = None
+        item.purchased_by_id = None
+        item.purchased_by_display_name = None
     details_parts = [f"{k}={v}" for k, v in payload.items()]
     for k, v in payload.items():
         setattr(item, k, v)

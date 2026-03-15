@@ -83,6 +83,8 @@ button:hover, .btn:hover { border-color: var(--accent); }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-danger { color: var(--red); }
 .btn-purchase { background: var(--green); border-color: var(--green); color: #000; }
+.btn-unpurchase { border-color: var(--accent); color: var(--accent); }
+.btn-unpurchase:hover { background: var(--accent); color: #fff; }
 .btn-purchase:hover { filter: brightness(1.1); }
 .btn-sm { padding: 3px 8px; font-size: .78rem; }
 
@@ -98,7 +100,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .toolbar input { max-width: 300px; }
 
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex;
-  align-items: center; justify-content: center; z-index: 100; }
+  align-items: center; justify-content: center; z-index: 160; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 24px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
 .modal h3 { margin-bottom: 16px; }
@@ -1272,6 +1274,7 @@ async function loadShoppingList() {
           <span class="name">${i.library_item?.name || '?'}</span>
           <span class="qty">${i.quantity} ${i.unit}</span>
           <span class="actions">
+            <button class="btn-sm btn-unpurchase" onclick="markBackToBuy(${listId},${i.id})" title="Move back to list">To buy</button>
             <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})">✕</button>
           </span>
         </div>
@@ -1479,6 +1482,11 @@ function showExpModal(listId, itemId, currentDate) {
 async function purchaseItem(listId, itemId) {
   await api(`/lists/${listId}/items/${itemId}/purchase`, {method: 'PATCH'});
   playCompleteSound();
+  loadShoppingList();
+}
+
+async function markBackToBuy(listId, itemId) {
+  await api(`/lists/${listId}/items/${itemId}`, {method: 'PUT', body: JSON.stringify({status: 'pending'})});
   loadShoppingList();
 }
 
