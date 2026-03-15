@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mechou — Admin</title>
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -469,7 +471,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 <div id="toast-container"></div>
 
 <!-- Add-items overlay (mobile-first): sticky search, filterable list, added state -->
-<div id="add-items-overlay" class="add-overlay" style="display:none" aria-hidden="true">
+<div id="add-items-overlay" class="add-overlay" style="display:none" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Add items to list">
   <div class="add-overlay-header">
     <span class="add-overlay-title">Add items</span>
     <button type="button" class="btn-primary btn-sm add-overlay-new-item" id="add-overlay-new-item">+ New item</button>
@@ -504,7 +506,35 @@ const NAME_TO_EMOJI = {
   croissant: '🥐', bagel: '🥯', pancake: '🥞', waffle: '🧇', toast: '🍞',
   bacon: '🥓', sausage: '🌭', ham: '🥓', turkey: '🦃', duck: '🦆',
   cola: '🥤', soda: '🥤', beer: '🍺', wine: '🍷', champagne: '🍾',
-  soap: '🧼', detergent: '🧴', sponge: '🧽', paper: '🧻', tissue: '🧻'
+  soap: '🧼', detergent: '🧴', sponge: '🧽', paper: '🧻', tissue: '🧻',
+  almond: '🥜', almonds: '🥜', walnut: '🥜', walnuts: '🥜', cashew: '🥜', hazelnut: '🥜',
+  blueberry: '🫐', blueberries: '🫐', raspberry: '🍓', raspberries: '🍓', blackberry: '🫐', cherry: '🍒', cherries: '🍒',
+  mango: '🥭', mangoes: '🥭', kiwi: '🥝', kiwis: '🥝', lime: '🍋', limes: '🍋', grapefruit: '🍊', plum: '🍑', plums: '🍑',
+  cabbage: '🥬', cauliflower: '🥦', zucchini: '🥒', eggplant: '🍆', pumpkin: '🎃', squash: '🎃', beet: '🫒', beets: '🫒',
+  celery: '🥬', asparagus: '🌿', greenbean: '🫛', greenbeans: '🫛', radish: '🥕', radishes: '🥕', leek: '🧅', leeks: '🧅',
+  mince: '🥩', minced: '🥩', lamb: '🥩', steak: '🥩', seafood: '🦐', cod: '🐟', sardine: '🐟', prawn: '🦐', prawns: '🦐',
+  tofu: '🧈', tempeh: '🥩', hummus: '🫓', falafel: '🫓', olives: '🫒',
+  baguette: '🥖', roll: '🥖', rolls: '🥖', loaf: '🍞', crackers: '🍘', crisps: '🥔', pretzel: '🥨',
+  oatmeal: '🥣', porridge: '🥣', granola: '🥣', muesli: '🥣', quinoa: '🍚', couscous: '🍚', bulgur: '🍚',
+  sauce: '🫙', ketchup: '🫙', mustard: '🫙', mayo: '🫙', mayonnaise: '🫙', salsa: '🫙', pesto: '🌿',
+  jam: '🍓', jelly: '🍓', marmalade: '🍊', spread: '🧈', nutella: '🍫', syrup: '🍯', maple: '🍯',
+  almondmilk: '🥛', oatmilk: '🥛', soymilk: '🥛',
+  espresso: '☕', cappuccino: '☕', latte: '☕', hotchocolate: '☕', cocoa: '☕',
+  smoothie: '🧃', lemonade: '🍋', icedtea: '🍵', mineral: '💧', sparkling: '💧',
+  cider: '🍎', lager: '🍺', ale: '🍺', whisky: '🥃', whiskey: '🥃', rum: '🥃', vodka: '🥃',
+  icecream: '🍦', sorbet: '🍦', gelato: '🍦', dessert: '🍰', pie: '🥧', tart: '🥧', donut: '🍩', donuts: '🍩',
+  cornflakes: '🥣', popcorn: '🍿', snack: '🍿', trail: '🥜', bar: '🍫', energy: '🍫',
+  baby: '🍼', infant: '🍼', formula: '🍼', pet: '🐕', dog: '🐕', cat: '🐈', food: '🍽️',
+  laundry: '🧺', bleach: '🧴', fabric: '🧺', dishwasher: '🍽️', tablet: '💊',
+  toothpaste: '🪥', toothbrush: '🪥', shampoo: '🧴', conditioner: '🧴', deodorant: '🧴', lotion: '🧴',
+  vitamin: '💊', vitamins: '💊', supplement: '💊', medicine: '💊', pill: '💊',
+  battery: '🔋', batteries: '🔋', bulb: '💡', lightbulb: '💡',
+  bag: '🛍️', bags: '🛍️', foil: '📜', wrap: '📜', cling: '📜', freezer: '❄️',
+  herb: '🌿', herbs: '🌿', mint: '🌿', dill: '🌿', oregano: '🌿', thyme: '🌿', rosemary: '🌿', cilantro: '🌿', coriander: '🌿',
+  spice: '🧂', spices: '🧂', cinnamon: '🧂', paprika: '🌶️', cumin: '🧂', turmeric: '🫚', curry: '🌶️', nutmeg: '🧂',
+  canned: '🥫', can: '🥫', tin: '🥫', jar: '🫙', bottle: '🍾',
+  frozen: '❄️', fresh: '🥬', organic: '🌱', vegan: '🌱', veggie: '🥬',
+  breakfast: '🍳', lunch: '🥪', dinner: '🍽️'
 };
 
 function suggestIconFromName(name) {
@@ -977,8 +1007,10 @@ function openAddItemsOverlay() {
     if (allLibrary.length === 0) allLibrary = await api('/library');
     const list = await api(`/lists/${listId}`);
     addOverlayAddedIds = new Set(list.items.map(i => i.library_item_id));
-    document.getElementById('add-items-overlay').style.display = 'flex';
-    document.getElementById('add-items-overlay').setAttribute('aria-hidden', 'false');
+    const overlay = document.getElementById('add-items-overlay');
+    overlay.style.display = 'flex';
+    overlay.removeAttribute('aria-hidden');
+    overlay.setAttribute('aria-modal', 'true');
     document.body.style.overflow = 'hidden';
     renderAddItemsList('');
     document.getElementById('add-overlay-search').value = '';
@@ -987,8 +1019,9 @@ function openAddItemsOverlay() {
 }
 
 function closeAddItemsOverlay() {
-  document.getElementById('add-items-overlay').style.display = 'none';
-  document.getElementById('add-items-overlay').setAttribute('aria-hidden', 'true');
+  const overlay = document.getElementById('add-items-overlay');
+  overlay.style.display = 'none';
+  overlay.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   addOverlayListId = null;
   loadShoppingList();
