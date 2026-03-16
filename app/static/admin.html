@@ -70,6 +70,7 @@ nav button:hover:not(.active) { border-color: var(--accent); }
 .nav-drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border); margin-top: auto; flex-shrink: 0; }
 .nav-drawer-footer .sounds-toggle { margin-left: 0; }
 .nav-drawer nav { flex: 1; flex-direction: column; gap: 0; padding: 12px 0; overflow-y: auto; }
+.nav-drawer-group { display: block; width: 100%; padding: 12px 20px 4px; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); pointer-events: none; }
 .nav-drawer nav button { width: 100%; text-align: left; padding: 14px 20px; border-radius: 0; border-left: 3px solid transparent; }
 .nav-drawer nav button.active { border-left-color: var(--accent); }
 
@@ -342,14 +343,12 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   </div>
   <div class="nav-wrap">
     <nav id="tabs" class="desktop-nav">
-      <button data-tab="shopping" class="active">Shopping List</button>
+      <button data-tab="shopping" class="active">Shopping lists</button>
       <button data-tab="recent">Recent Purchases</button>
-      <button data-tab="mealplan">Meal Plan</button>
-      <button data-tab="calendar">Calendar</button>
       <button data-tab="library">Library</button>
-      <button data-tab="categories">Categories</button>
-      <button data-tab="supermarkets">Supermarkets</button>
+      <button data-tab="mealplan">Meal Plan</button>
       <button data-tab="reminders">Reminders</button>
+      <button data-tab="calendar">Calendar</button>
       <button data-tab="users">Users</button>
     </nav>
   </div>
@@ -388,13 +387,14 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       </div>
     </div>
     <nav id="nav-drawer-tabs">
-      <button data-tab="shopping" type="button">Shopping List</button>
+      <span class="nav-drawer-group">Shopping</span>
+      <button data-tab="shopping" type="button">Shopping lists</button>
       <button data-tab="recent" type="button">Recent Purchases</button>
-      <button data-tab="mealplan" type="button">Meal Plan</button>
-      <button data-tab="calendar" type="button">Calendar</button>
       <button data-tab="library" type="button">Library</button>
-      <button data-tab="supermarkets" type="button">Supermarkets</button>
+      <span class="nav-drawer-group">Weekly plan</span>
+      <button data-tab="mealplan" type="button">Meal Plan</button>
       <button data-tab="reminders" type="button">Reminders</button>
+      <button data-tab="calendar" type="button">Calendar</button>
       <button data-tab="users" type="button">Users</button>
     </nav>
     <div class="nav-drawer-footer">
@@ -480,6 +480,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
         <option value="">All categories</option>
       </select>
       <button class="btn-primary btn-sm" onclick="showItemModal()">+ New item</button>
+      <button type="button" class="btn-sm" onclick="switchToTab('supermarkets')" style="margin-left:auto">Supermarket presets</button>
     </div>
     <table><thead><tr>
       <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>Created by</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
@@ -779,12 +780,10 @@ document.getElementById('nav-toggle').addEventListener('click', () => {
 document.getElementById('nav-drawer-backdrop').addEventListener('click', closeNavDrawer);
 
 // ── Tabs (desktop nav + drawer nav) ──
-document.addEventListener('click', e => {
-  const btn = e.target.closest('nav button[data-tab]');
-  if (!btn) return;
-  const tabId = btn.dataset.tab;
+function switchToTab(tabId) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + tabId).classList.add('active');
+  const panel = document.getElementById('panel-' + tabId);
+  if (panel) panel.classList.add('active');
   syncDrawerActiveTab(tabId);
   closeNavDrawer();
   const loaders = {library: loadLibrary, supermarkets: loadSupermarkets,
@@ -801,6 +800,12 @@ document.addEventListener('click', e => {
     window._listRefreshInterval = null;
     disconnectListWS();
   }
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('nav button[data-tab]');
+  if (!btn) return;
+  switchToTab(btn.dataset.tab);
 });
 
 function connectListWS() {
