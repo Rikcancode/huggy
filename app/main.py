@@ -55,6 +55,11 @@ def _run_migrations():
                 conn.execute(text("ALTER TABLE grocery_list_items ADD COLUMN updated_at DATETIME"))
                 conn.execute(text("UPDATE grocery_list_items SET updated_at = created_at WHERE updated_at IS NULL"))
                 conn.commit()
+            # user avatar (data URL)
+            r = conn.execute(text("PRAGMA table_info(users)"))
+            if not any(row[1] == "avatar" for row in r):
+                conn.execute(text("ALTER TABLE users ADD COLUMN avatar TEXT"))
+                conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 

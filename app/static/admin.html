@@ -29,8 +29,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sa
 h2 { font-size: 1.15rem; color: var(--muted); margin-bottom: 16px; }
 
 .nav-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-.nav-toggle { display: none; padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--surface); color: var(--text); cursor: pointer; font-size: .9rem; }
+.nav-toggle { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); cursor: pointer; font-size: 1.4rem; }
 nav { display: flex; gap: 4px; flex-wrap: wrap; }
 nav button { padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--surface); color: var(--text); cursor: pointer; font-size: .9rem; }
@@ -47,22 +48,34 @@ nav button:hover:not(.active) { border-color: var(--accent); }
   transform: translateX(100%); transition: transform .25s ease;
   padding-top: env(safe-area-inset-top); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
 .nav-drawer.open { transform: translateX(0); }
-.nav-drawer-user { padding: 16px 20px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: .9rem; }
+.nav-drawer-user, .nav-drawer-guest { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.nav-drawer-user { color: var(--muted); font-size: .9rem; }
 .nav-drawer-user strong { color: var(--text); display: block; font-size: 1rem; margin-bottom: 2px; }
+.nav-drawer-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.user-avatar-wrap { flex-shrink: 0; }
+.user-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; background: var(--border); }
+.user-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 600; }
+.nav-drawer-user-info { min-width: 0; }
+.user-role-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .75rem; font-weight: 600; margin-top: 4px; }
+.user-role-badge.role-admin { background: var(--accent); color: #fff; }
+.user-role-badge.role-user { background: var(--border); color: var(--muted); }
+.nav-drawer-user .btn-sm { margin-right: 8px; margin-top: 4px; }
+.nav-drawer-guest p { color: var(--muted); font-size: .9rem; margin-bottom: 12px; }
+.nav-drawer-guest-hint { font-size: .8rem; margin-bottom: 10px; }
+.nav-drawer-guest input { margin-bottom: 8px; }
+.nav-drawer-guest .btn-primary { margin-top: 4px; }
+.signin-prompt-bar { display: none; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); color: var(--muted); font-size: .9rem; }
+.signin-prompt-bar.visible { display: block; }
+.signin-prompt-bar a, .signin-prompt-bar button { color: var(--accent); cursor: pointer; background: none; border: none; font-size: inherit; text-decoration: underline; }
+.nav-drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border); margin-top: auto; flex-shrink: 0; }
+.nav-drawer-footer .sounds-toggle { margin-left: 0; }
 .nav-drawer nav { flex: 1; flex-direction: column; gap: 0; padding: 12px 0; overflow-y: auto; }
 .nav-drawer nav button { width: 100%; text-align: left; padding: 14px 20px; border-radius: 0; border-left: 3px solid transparent; }
 .nav-drawer nav button.active { border-left-color: var(--accent); }
 
-@media (max-width: 768px) {
-  .nav-toggle { display: block; }
-  .nav-wrap nav.desktop-nav { display: none !important; }
-  .nav-drawer-backdrop { display: block; pointer-events: none; }
-  .nav-drawer-backdrop.open { pointer-events: auto; }
-}
-@media (min-width: 769px) {
-  .nav-drawer-backdrop { display: none !important; }
-  .nav-drawer { display: none !important; }
-}
+.nav-wrap nav.desktop-nav { display: none !important; }
+.nav-drawer-backdrop { display: block; pointer-events: none; }
+.nav-drawer-backdrop.open { pointer-events: auto; }
 
 .panel { display: none; }
 .panel.active { display: block; }
@@ -98,6 +111,39 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
 .toolbar input { max-width: 300px; }
+.list-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.list-title-select {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  padding: 4px 8px 4px 0;
+  margin: 0;
+  min-width: 140px;
+  max-width: min(320px, 100%);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b8d98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 4px center;
+  padding-left: 28px;
+}
+.list-title-select:hover { color: var(--accent); }
+.list-title-select:focus { outline: none; color: var(--accent); }
+.list-title-select option { font-size: 0.95rem; font-weight: normal; background: var(--surface); color: var(--text); }
+.btn-new-list { flex-shrink: 0; }
+.list-pending-count { font-size: .9rem; font-weight: 700; color: #d4a017; margin: -8px 0 12px 0; }
+.list-actions-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.list-actions-row select { max-width: 200px; height: 38px; box-sizing: border-box; }
+.list-actions-row #btn-open-add-overlay { height: 38px; padding: 0 20px; margin-left: auto; flex-shrink: 0; }
+
+.library-categories-details { margin-bottom: 20px; }
+.library-categories-details summary { cursor: pointer; font-weight: 600; color: var(--muted); padding: 8px 0; }
+.library-categories-details summary:hover { color: var(--text); }
+.library-categories-details table { margin-top: 8px; }
 
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex;
   align-items: center; justify-content: center; z-index: 160; }
@@ -273,34 +319,8 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 </style>
 </head>
 <body>
-<div id="login-screen" style="max-width:400px;margin:40px auto;padding:24px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:none">
-  <h1 style="font-family:'Fredoka',sans-serif;font-size:1.6rem;margin-bottom:12px">Mechou login</h1>
-  <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">Sign in with your username and password. Default is <strong>Admin</strong> / <strong>mechou</strong> (username is case-sensitive).</p>
-  <form id="login-form" onsubmit="doLogin(); return false;">
-    <div class="form-row"><div>
-      <label for="login-name">Username</label>
-      <input id="login-name" name="username" autocomplete="username" required placeholder="Your username">
-    </div></div>
-    <div class="form-row"><div>
-      <label for="login-pass">Password</label>
-      <input id="login-pass" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
-    </div></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button type="submit" class="btn-primary" id="login-submit">Sign in</button>
-    </div>
-    <p style="margin-top:16px;font-size:.85rem">
-      <button type="button" class="btn-sm" id="login-show-reset" style="color:var(--muted)">Reset admin password…</button>
-    </p>
-  </form>
-  <div id="login-reset-box" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-    <p style="font-size:.85rem;color:var(--muted);margin-bottom:8px">Set a new password for the Admin user. You need the setup token (from <code>GROCERY_SETUP_TOKEN</code> on the server).</p>
-    <div class="form-row"><div><label>Setup token</label><input id="reset-token" type="password" autocomplete="off" placeholder="Server setup token"></div></div>
-    <div class="form-row"><div><label>New password</label><input id="reset-new-password" type="password" autocomplete="new-password" placeholder="New password"></div></div>
-    <div style="margin-top:8px"><button type="button" class="btn-primary btn-sm" id="login-do-reset">Reset password</button> <button type="button" class="btn-sm" id="login-hide-reset">Cancel</button></div>
-  </div>
-</div>
-
 <div class="app" id="app-root" style="display:none">
+  <div class="signin-prompt-bar" id="signin-prompt-bar">Sign in using the <button type="button" id="signin-prompt-open-menu">menu ☰</button></div>
   <div class="app-topbar">
     <header class="app-header">
       <div class="app-logo">
@@ -318,10 +338,8 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       </div>
       <span class="app-brand">Mechou</span>
     </header>
-    <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="tabs">☰ Menu</button>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-drawer" aria-label="Menu">☰</button>
   </div>
-  <h2>Admin Panel</h2>
-
   <div class="nav-wrap">
     <nav id="tabs" class="desktop-nav">
       <button data-tab="shopping" class="active">Shopping List</button>
@@ -339,9 +357,35 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   <!-- Mobile nav drawer (overlay, does not push content) -->
   <div class="nav-drawer-backdrop" id="nav-drawer-backdrop" aria-hidden="true"></div>
   <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
-    <div class="nav-drawer-user" id="nav-drawer-user">
-      <strong id="nav-drawer-username">—</strong>
-      <span>Logged in</span>
+    <div class="nav-drawer-user" id="nav-drawer-user" style="display:none">
+      <div class="nav-drawer-user-row">
+        <div class="user-avatar-wrap" id="nav-drawer-avatar-wrap"></div>
+        <div class="nav-drawer-user-info">
+          <strong id="nav-drawer-username">—</strong>
+          <span class="user-role-badge" id="nav-drawer-role">—</span>
+        </div>
+      </div>
+      <button type="button" class="btn-sm" id="nav-drawer-change-photo">Change photo</button>
+      <input type="file" id="nav-drawer-avatar-input" accept="image/*" hidden aria-label="Choose profile photo">
+      <button type="button" class="btn-sm btn-danger" id="nav-drawer-logout">Log out</button>
+    </div>
+    <div class="nav-drawer-guest" id="nav-drawer-guest">
+      <p>Not logged in</p>
+      <p class="nav-drawer-guest-hint">Default: <strong>Admin</strong> / <strong>mechou</strong> (username is case-sensitive).</p>
+      <form id="drawer-login-form">
+        <input id="drawer-login-name" placeholder="Username" autocomplete="username" aria-label="Username">
+        <input id="drawer-login-pass" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+        <button type="submit" class="btn-primary btn-sm">Sign in</button>
+      </form>
+      <p style="margin-top:12px;font-size:.85rem">
+        <button type="button" class="btn-sm" id="drawer-show-reset" style="color:var(--muted)">Reset admin password…</button>
+      </p>
+      <div id="drawer-reset-box" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:8px">Setup token (from <code>GROCERY_SETUP_TOKEN</code>) and new password.</p>
+        <input id="drawer-reset-token" type="password" placeholder="Setup token" style="margin-bottom:8px">
+        <input id="drawer-reset-new-password" type="password" placeholder="New password" style="margin-bottom:8px">
+        <div><button type="button" class="btn-primary btn-sm" id="drawer-do-reset">Reset password</button> <button type="button" class="btn-sm" id="drawer-hide-reset">Cancel</button></div>
+      </div>
     </div>
     <nav id="nav-drawer-tabs">
       <button data-tab="shopping" type="button">Shopping List</button>
@@ -349,27 +393,28 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <button data-tab="mealplan" type="button">Meal Plan</button>
       <button data-tab="calendar" type="button">Calendar</button>
       <button data-tab="library" type="button">Library</button>
-      <button data-tab="categories" type="button">Categories</button>
       <button data-tab="supermarkets" type="button">Supermarkets</button>
       <button data-tab="reminders" type="button">Reminders</button>
       <button data-tab="users" type="button">Users</button>
     </nav>
-  </div>
-
-  <!-- SHOPPING LIST -->
-  <div id="panel-shopping" class="panel active">
-    <div class="toolbar">
-      <select id="list-select" style="max-width:240px"><option value="">Select list…</option></select>
-      <select id="supermarket-select" style="max-width:200px"><option value="">Default order</option></select>
-      <button class="btn-primary btn-sm" onclick="promptNewList()">+ New List</button>
-    </div>
-    <div class="toolbar">
-      <button type="button" class="btn-primary" id="btn-open-add-overlay" style="min-height:44px;padding:10px 20px">+ Add items</button>
+    <div class="nav-drawer-footer">
       <label class="sounds-toggle" title="Play sounds when adding, editing, removing or completing items">
         <input type="checkbox" id="sounds-toggle" checked aria-label="Sounds on or off">
         <span class="toggle-track"><span class="toggle-thumb"></span></span>
         <span>Sounds</span>
       </label>
+    </div>
+  </div>
+
+  <!-- SHOPPING LIST -->
+  <div id="panel-shopping" class="panel active">
+    <div class="list-header-row">
+      <select id="list-select" class="list-title-select" aria-label="Current list"><option value="">Select list…</option></select>
+    </div>
+    <p id="list-pending-count" class="list-pending-count" aria-live="polite">0 items left to buy</p>
+    <div class="list-actions-row">
+      <select id="supermarket-select" aria-label="Sort by supermarket"><option value="">Default order</option></select>
+      <button type="button" class="btn-primary" id="btn-open-add-overlay">+ Add items</button>
     </div>
     <datalist id="lib-suggestions"></datalist>
     <div id="shopping-content"></div>
@@ -421,6 +466,14 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
   <!-- LIBRARY -->
   <div id="panel-library" class="panel">
+    <details class="library-categories-details">
+      <summary>Manage categories</summary>
+      <div class="toolbar">
+        <button type="button" class="btn-primary btn-sm" onclick="showCatModal()">+ Add Category</button>
+      </div>
+      <table><thead><tr><th>Icon</th><th>Name</th><th>Order</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th></tr></thead>
+      <tbody id="cat-body"></tbody></table>
+    </details>
     <div class="toolbar">
       <input id="lib-search" placeholder="Search items…" oninput="loadLibrary()">
       <select id="lib-cat-filter" onchange="loadLibrary()" style="max-width:200px">
@@ -431,15 +484,6 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     <table><thead><tr>
       <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>Created by</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
     </tr></thead><tbody id="lib-body"></tbody></table>
-  </div>
-
-  <!-- CATEGORIES -->
-  <div id="panel-categories" class="panel">
-    <div class="toolbar">
-      <button class="btn-primary btn-sm" onclick="showCatModal()">+ Add Category</button>
-    </div>
-    <table><thead><tr><th>Icon</th><th>Name</th><th>Order</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th></tr></thead>
-    <tbody id="cat-body"></tbody></table>
   </div>
 
   <!-- SUPERMARKETS -->
@@ -630,19 +674,24 @@ function initSoundsToggle() {
 async function ensureLoggedIn() {
   try {
     await api('/users/me');
-    document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-root').style.display = 'block';
+    document.getElementById('signin-prompt-bar').classList.remove('visible');
     return true;
   } catch (e) {
-    document.getElementById('app-root').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('app-root').style.display = 'block';
+    document.getElementById('signin-prompt-bar').classList.add('visible');
     return false;
   }
 }
 
-async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  const password = document.getElementById('login-pass').value;
+function getDrawerLoginCredentials() {
+  const nameEl = document.getElementById('drawer-login-name');
+  const passEl = document.getElementById('drawer-login-pass');
+  return { name: (nameEl && nameEl.value.trim()) || '', password: (passEl && passEl.value) || '' };
+}
+
+async function doLoginFromDrawer() {
+  const { name, password } = getDrawerLoginCredentials();
   if (!name || !password) { toast('Enter username and password'); return; }
   try {
     const r = await fetch('/auth/login', {
@@ -653,13 +702,16 @@ async function doLogin() {
     });
     if (!r.ok) {
       const e = await r.json().catch(() => ({}));
-      throw new Error(e.detail || 'Login failed');
+      const msg = Array.isArray(e.detail) ? e.detail.map(x => x.msg || x).join(' ') : (e.detail || 'Login failed');
+      throw new Error(msg);
     }
-    document.getElementById('login-pass').value = '';
+    const passEl = document.getElementById('drawer-login-pass');
+    if (passEl) passEl.value = '';
     toast('Signed in');
     await ensureLoggedIn();
     loadCurrentUser();
     loadLists();
+    closeNavDrawer();
     if (document.getElementById('panel-shopping').classList.contains('active')) {
       clearInterval(window._listRefreshInterval);
       window._listRefreshInterval = setInterval(() => { if (document.visibilityState === 'visible') loadShoppingList(); }, 10000);
@@ -668,6 +720,18 @@ async function doLogin() {
   } catch (e) {
     toast(e.message || 'Login failed');
   }
+}
+
+async function doLogout() {
+  try {
+    await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (_) {}
+  currentUser = null;
+  document.getElementById('nav-drawer-user').style.display = 'none';
+  document.getElementById('nav-drawer-guest').style.display = 'block';
+  document.getElementById('signin-prompt-bar').classList.add('visible');
+  closeNavDrawer();
+  toast('Signed out');
 }
 
 function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
@@ -723,7 +787,7 @@ document.addEventListener('click', e => {
   document.getElementById('panel-' + tabId).classList.add('active');
   syncDrawerActiveTab(tabId);
   closeNavDrawer();
-  const loaders = {library: loadLibrary, categories: loadCategories, supermarkets: loadSupermarkets,
+  const loaders = {library: loadLibrary, supermarkets: loadSupermarkets,
     reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases, mealplan: loadMealPlan};
   loaders[tabId]?.();
   if (tabId === 'shopping') {
@@ -771,14 +835,47 @@ function disconnectListWS() {
 }
 
 // ── Current user for drawer ──
-let currentUserName = null;
+let currentUser = null;
+function renderDrawerUser(u) {
+  const nameEl = document.getElementById('nav-drawer-username');
+  const roleEl = document.getElementById('nav-drawer-role');
+  const wrapEl = document.getElementById('nav-drawer-avatar-wrap');
+  if (nameEl) nameEl.textContent = u?.name || '—';
+  if (roleEl) {
+    const role = (u?.role || 'user').toLowerCase();
+    roleEl.textContent = role === 'admin' ? 'Admin' : 'Standard';
+    roleEl.className = 'user-role-badge role-' + role;
+  }
+  if (wrapEl) {
+    wrapEl.textContent = '';
+    if (u?.avatar) {
+      const img = document.createElement('img');
+      img.className = 'user-avatar';
+      img.alt = '';
+      img.src = u.avatar;
+      wrapEl.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'user-avatar-placeholder';
+      ph.setAttribute('aria-hidden', 'true');
+      ph.textContent = (u?.name || '?').charAt(0).toUpperCase();
+      wrapEl.appendChild(ph);
+    }
+  }
+  document.getElementById('nav-drawer-user').style.display = 'block';
+  document.getElementById('nav-drawer-guest').style.display = 'none';
+  document.getElementById('signin-prompt-bar').classList.remove('visible');
+}
 async function loadCurrentUser() {
   try {
     const u = await api('/users/me');
-    currentUserName = u?.name || null;
-    const el = document.getElementById('nav-drawer-username');
-    if (el) el.textContent = currentUserName || '—';
-  } catch (_) {}
+    currentUser = u;
+    renderDrawerUser(u);
+  } catch (_) {
+    currentUser = null;
+    document.getElementById('nav-drawer-user').style.display = 'none';
+    document.getElementById('nav-drawer-guest').style.display = 'block';
+  }
 }
 
 // ── Categories ──
@@ -787,7 +884,8 @@ async function loadCategories() {
   document.getElementById('cat-body').innerHTML = allCategories.map(c => `<tr>
     <td>${c.icon}</td><td>${c.name}</td><td>${c.sort_order}</td>
     <td>${c.translations?.da || ''}</td><td>${c.translations?.it || ''}</td><td>${c.translations?.bg || ''}</td>
-    <td><button class="btn-sm btn-danger" onclick="delCat(${c.id})">✕</button></td>
+    <td><button class="btn-sm" onclick='showCatModal(${JSON.stringify(c).replace(/'/g, "&#39;")})' title="Edit">✎</button>
+    <button class="btn-sm btn-danger" onclick="delCat(${c.id})">✕</button></td>
   </tr>`).join('');
   const sel = document.getElementById('lib-cat-filter');
   sel.innerHTML = '<option value="">All categories</option>' +
@@ -976,7 +1074,8 @@ async function loadLists() {
   const lists = await api('/lists');
   const sel = document.getElementById('list-select');
   sel.innerHTML = '<option value="">Select list…</option>' +
-    lists.map(l => `<option value="${l.id}">${l.name} (${l.item_count} items)</option>`).join('');
+    lists.map(l => `<option value="${l.id}">${l.name}</option>`).join('') +
+    '<option value="__new__">Create new list</option>';
   const grocery = lists.find(l => l.name === 'Grocery');
   if (grocery) {
     sel.value = String(grocery.id);
@@ -986,7 +1085,29 @@ async function loadLists() {
   const ss = document.getElementById('supermarket-select');
   ss.innerHTML = '<option value="">Default order</option>' +
     allSupermarkets.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  sel.onchange = () => loadShoppingList();
+  sel.onchange = async () => {
+    if (sel.value === '__new__') {
+      const name = prompt('List name:');
+      const firstId = lists.length ? String(lists[0].id) : '';
+      if (!name || !name.trim()) {
+        sel.value = firstId;
+        if (firstId) loadShoppingList();
+        return;
+      }
+      try {
+        const created = await api('/lists', { method: 'POST', body: JSON.stringify({ name: name.trim() }) });
+        toast('Created');
+        await loadLists();
+        sel.value = String(created.id);
+        loadShoppingList();
+      } catch (e) {
+        sel.value = firstId;
+        toast(e.message || 'Failed');
+      }
+    } else {
+      loadShoppingList();
+    }
+  };
   ss.onchange = () => loadShoppingList();
   if (allLibrary.length === 0) allLibrary = await api('/library');
   updateSuggestions();
@@ -1188,7 +1309,9 @@ document.addEventListener('keydown', function(e) {
 
 async function loadShoppingList() {
   const listId = document.getElementById('list-select').value;
+  const countEl = document.getElementById('list-pending-count');
   if (!listId) {
+    if (countEl) countEl.textContent = '0 items left to buy';
     document.getElementById('shopping-content').innerHTML = '';
     document.getElementById('shopping-activity').innerHTML = '';
     return;
@@ -1211,7 +1334,7 @@ async function loadShoppingList() {
 
   const pending = list.items.filter(i => i.status === 'pending');
   const purchased = list.items.filter(i => i.status === 'purchased');
-  const createdBy = list.created_by ? `<p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">List created by ${list.created_by.name}</p>` : '';
+  if (countEl) countEl.textContent = pending.length === 1 ? '1 item left to buy' : `${pending.length} items left to buy`;
 
   const grouped = {};
   pending.forEach(i => {
@@ -1222,7 +1345,7 @@ async function loadShoppingList() {
   });
 
   const unitList = UNITS;
-  let html = createdBy;
+  let html = '';
   for (const [cat, items] of Object.entries(grouped)) {
     html += `<div class="list-group"><h3>${cat}</h3>`;
     items.forEach(i => {
@@ -1698,20 +1821,38 @@ async function loadCalendar() {
 // ── Helpers ──
 function gv(id) { return document.getElementById(id).value; }
 
-// Init
-document.getElementById('login-submit').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
+// ── Drawer: login form, logout, change photo, sign-in prompt ──
+document.getElementById('drawer-login-form').addEventListener('submit', function(e) { e.preventDefault(); doLoginFromDrawer(); });
+document.getElementById('drawer-login-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doLoginFromDrawer(); } });
+document.getElementById('signin-prompt-open-menu').addEventListener('click', openNavDrawer);
+document.getElementById('nav-drawer-logout').addEventListener('click', doLogout);
+document.getElementById('nav-drawer-change-photo').addEventListener('click', function() { document.getElementById('nav-drawer-avatar-input').click(); });
+document.getElementById('nav-drawer-avatar-input').addEventListener('change', async function() {
+  const input = this;
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = async function() {
+    const dataUrl = reader.result;
+    try {
+      await api('/users/me', { method: 'PATCH', body: JSON.stringify({ avatar: dataUrl }) });
+      if (currentUser) currentUser.avatar = dataUrl;
+      renderDrawerUser(currentUser);
+      toast('Photo updated');
+    } catch (e) { toast(e.message || 'Update failed'); }
+  };
+  reader.readAsDataURL(file);
 });
-document.getElementById('login-show-reset').addEventListener('click', function() {
-  document.getElementById('login-reset-box').style.display = 'block';
+document.getElementById('drawer-show-reset').addEventListener('click', function() {
+  document.getElementById('drawer-reset-box').style.display = 'block';
 });
-document.getElementById('login-hide-reset').addEventListener('click', function() {
-  document.getElementById('login-reset-box').style.display = 'none';
+document.getElementById('drawer-hide-reset').addEventListener('click', function() {
+  document.getElementById('drawer-reset-box').style.display = 'none';
 });
-document.getElementById('login-do-reset').addEventListener('click', async function() {
-  const token = document.getElementById('reset-token').value.trim();
-  const newPassword = document.getElementById('reset-new-password').value;
+document.getElementById('drawer-do-reset').addEventListener('click', async function() {
+  const token = document.getElementById('drawer-reset-token').value.trim();
+  const newPassword = document.getElementById('drawer-reset-new-password').value;
   if (!token || !newPassword) { toast('Enter setup token and new password'); return; }
   try {
     const r = await fetch('/auth/reset-admin-password', {
@@ -1722,16 +1863,17 @@ document.getElementById('login-do-reset').addEventListener('click', async functi
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(data.detail || 'Reset failed');
     toast('Password updated. Sign in with Admin and your new password.');
-    document.getElementById('login-reset-box').style.display = 'none';
-    document.getElementById('reset-token').value = '';
-    document.getElementById('reset-new-password').value = '';
+    document.getElementById('drawer-reset-box').style.display = 'none';
+    document.getElementById('drawer-reset-token').value = '';
+    document.getElementById('drawer-reset-new-password').value = '';
   } catch (e) { toast(e.message); }
 });
 
+// Init
 (async () => {
   const ok = await ensureLoggedIn();
+  syncDrawerActiveTab('shopping');
   if (ok) {
-    syncDrawerActiveTab('shopping');
     loadCurrentUser();
     loadLists();
     initSoundsToggle();
@@ -1742,6 +1884,9 @@ document.getElementById('login-do-reset').addEventListener('click', async functi
       }, 10000);
       connectListWS();
     }
+  } else {
+    document.getElementById('nav-drawer-user').style.display = 'none';
+    document.getElementById('nav-drawer-guest').style.display = 'block';
   }
 })();
 </script>

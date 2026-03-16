@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.routers.auth import hash_password
-from app.schemas import UserCreate, UserUpdate, UserOut
+from app.schemas import UserCreate, UserUpdate, UserOut, UserMeUpdate
 from app.auth import require_admin, get_current_user
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -13,6 +13,16 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 @router.get("/me", response_model=UserOut)
 def get_current_user_info(user: User = Depends(get_current_user)):
     """Return the authenticated user (for showing name in the UI)."""
+    return user
+
+
+@router.patch("/me", response_model=UserOut)
+def update_current_user(data: UserMeUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Update the current user's profile (e.g. avatar)."""
+    if data.avatar is not None:
+        user.avatar = data.avatar if data.avatar.strip() else None
+    db.commit()
+    db.refresh(user)
     return user
 
 

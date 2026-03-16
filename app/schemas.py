@@ -234,8 +234,13 @@ class UserOut(BaseModel):
     api_key: str
     role: str
     language: str
+    avatar: str | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
+
+
+class UserMeUpdate(BaseModel):
+    avatar: str | None = None
 
 
 class UserLogin(BaseModel):

@@ -35,6 +35,7 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     role = Column(String(20), nullable=False, default="user")  # admin | user
     language = Column(String(5), nullable=False, default="en")
+    avatar = Column(Text, nullable=True)  # data URL (e.g. data:image/jpeg;base64,...)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
