@@ -240,6 +240,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .cal-more { font-size: .7rem; color: var(--muted); padding: 1px 4px; cursor: pointer; }
 .cal-legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: .8rem; color: var(--muted); align-items: center; }
 
+.recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.recipe-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: border-color .2s; }
+.recipe-card:hover { border-color: var(--accent); }
+.recipe-card h4 { margin: 0 0 6px; font-size: 1rem; }
+.recipe-card .recipe-meta { font-size: .8rem; color: var(--muted); }
+.recipe-card .recipe-stars { margin-top: 6px; }
+.recipe-stars span { color: #d4a017; }
+.recipe-detail-ingredients { font-size: .9rem; margin: 12px 0; }
+.recipe-detail-ingredients li { margin: 4px 0; }
 .mealplan-grid { display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
 .mealplan-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .mealplan-row label { min-width: 88px; font-weight: 600; color: var(--muted); }
@@ -347,6 +356,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <button data-tab="recent">Recent Purchases</button>
       <button data-tab="library">Library</button>
       <button data-tab="mealplan">Meal Plan</button>
+      <button data-tab="recipes">Recipes</button>
       <button data-tab="reminders">Reminders</button>
       <button data-tab="calendar">Calendar</button>
       <button data-tab="users">Users</button>
@@ -393,6 +403,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <button data-tab="library" type="button">Library</button>
       <span class="nav-drawer-group">Weekly plan</span>
       <button data-tab="mealplan" type="button">Meal Plan</button>
+      <button data-tab="recipes" type="button">Recipes</button>
       <button data-tab="reminders" type="button">Reminders</button>
       <button data-tab="calendar" type="button">Calendar</button>
       <button data-tab="users" type="button">Users</button>
@@ -424,6 +435,15 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     </details>
   </div>
 
+  <!-- RECIPES -->
+  <div id="panel-recipes" class="panel">
+    <div class="toolbar">
+      <input id="recipes-search" placeholder="Search recipes…" oninput="loadRecipes()" style="max-width:280px">
+      <button type="button" class="btn-sm" id="recipes-sync-obsidian" title="Sync one recipe from Obsidian by path">Sync from Obsidian</button>
+    </div>
+    <div id="recipes-list" class="recipes-grid"></div>
+  </div>
+
   <!-- MEAL PLAN -->
   <div id="panel-mealplan" class="panel">
     <div class="toolbar">
@@ -432,8 +452,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <button class="btn-sm" onclick="mealPlanPrevWeek()">&larr;</button>
       <button class="btn-sm" onclick="mealPlanNextWeek()">→</button>
       <button class="btn-sm" onclick="mealPlanGoThisWeek()">This week</button>
+      <button type="button" class="btn-primary btn-sm" id="mealplan-add-week-to-list">Add week to list</button>
     </div>
-    <p style="color:var(--muted);margin:8px 0 12px">Evening meals Monday–Friday. Type and blur to save.</p>
+    <p style="color:var(--muted);margin:8px 0 12px">Evening meals Monday–Friday. Type and blur to save. Pick a recipe from Recipes to link; then add ingredients to list.</p>
     <div id="mealplan-content" class="mealplan-grid"></div>
   </div>
 
@@ -787,7 +808,7 @@ function switchToTab(tabId) {
   syncDrawerActiveTab(tabId);
   closeNavDrawer();
   const loaders = {library: loadLibrary, supermarkets: loadSupermarkets,
-    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases, mealplan: loadMealPlan};
+    reminders: loadReminders, users: loadUsers, shopping: loadLists, calendar: loadCalendar, recent: loadRecentPurchases, mealplan: loadMealPlan, recipes: loadRecipes};
   loaders[tabId]?.();
   if (tabId === 'shopping') {
     clearInterval(window._listRefreshInterval);
@@ -1530,26 +1551,225 @@ async function loadMealPlan() {
   const byDay = Object.fromEntries(entries.map(e => [e.day, e]));
   let html = '';
   for (let day = 1; day <= 5; day++) {
-    const e = byDay[day] || { id: 0, year: y, week: w, day, dinner: '' };
+    const e = byDay[day] || { id: 0, year: y, week: w, day, dinner: '', recipe_id: null, recipe_servings: null };
     const name = dayNames[day - 1];
-    html += `<div class="mealplan-row">
+    const rid = e.recipe_id != null ? e.recipe_id : '';
+    const serv = e.recipe_servings != null ? e.recipe_servings : '';
+    const recipeInfo = rid ? ` <span class="recipe-meta" style="font-size:.8rem;color:var(--muted)">· ${serv} servings</span> <button type="button" class="btn-sm" onclick="addMealPlanDayToList(${y},${w},${day})">Add to list</button>` : '';
+    html += `<div class="mealplan-row" data-year="${y}" data-week="${w}" data-day="${day}" data-id="${e.id || ''}" data-recipe-id="${rid}" data-recipe-servings="${serv}">
       <label>${name}</label>
-      <input type="text" value="${escapeHtml(e.dinner || '')}" placeholder="Evening meal…"
-        data-year="${y}" data-week="${w}" data-day="${day}" data-id="${e.id || ''}"
-        onchange="saveMealPlanSlot(this)" onblur="saveMealPlanSlot(this)">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="text" value="${escapeHtml(e.dinner || '')}" placeholder="Evening meal or pick recipe…"
+          data-year="${y}" data-week="${w}" data-day="${day}" data-id="${e.id || ''}"
+          onchange="saveMealPlanSlot(this)" onblur="saveMealPlanSlot(this)" style="flex:1;min-width:140px">
+        <button type="button" class="btn-sm" onclick="pickRecipeForSlot(${y},${w},${day})">Pick recipe</button>
+        ${recipeInfo}
+      </div>
     </div>`;
   }
   document.getElementById('mealplan-content').innerHTML = html;
 }
 
+async function pickRecipeForSlot(y, w, day) {
+  if (!allRecipes.length) allRecipes = await api('/recipes');
+  const names = allRecipes.map(r => r.name);
+  const chosen = prompt('Recipe name (or leave blank to clear):\n' + names.slice(0, 15).join('\n') + (names.length > 15 ? '\n…' : ''));
+  if (chosen === null) return;
+  const recipe = allRecipes.find(r => r.name === chosen.trim());
+  const row = document.querySelector(`.mealplan-row[data-year="${y}"][data-week="${w}"][data-day="${day}"]`);
+  if (!recipe) {
+    if (row) {
+      row.dataset.recipeId = '';
+      row.dataset.recipeServings = '';
+      const inp = row.querySelector('input');
+      if (inp) { inp.value = chosen.trim(); saveMealPlanSlot(inp); }
+    }
+    return;
+  }
+  const servings = prompt('Servings for this meal:', String(recipe.default_servings));
+  const serv = servings ? parseInt(servings, 10) : recipe.default_servings;
+  await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
+    method: 'PUT',
+    body: JSON.stringify({ dinner: recipe.name, recipe_id: recipe.id, recipe_servings: serv }),
+  });
+  toast('Updated');
+  loadMealPlan();
+}
+
+async function addMealPlanDayToList(y, w, day) {
+  const row = document.querySelector(`.mealplan-row[data-year="${y}"][data-week="${w}"][data-day="${day}"]`);
+  const recipeId = row?.dataset.recipeId;
+  const servings = row?.dataset.recipeServings || '4';
+  if (!recipeId) { toast('No recipe linked to this day'); return; }
+  const listId = document.getElementById('list-select')?.value || (await api('/lists'))[0]?.id;
+  if (!listId) { toast('Create a list first'); return; }
+  try {
+    const res = await api(`/recipes/${recipeId}/add-to-list?list_id=${listId}&servings=${servings}`);
+    toast(`Added ${res.added.length} ingredients`);
+    loadShoppingList();
+  } catch (e) { toast(e.message || 'Failed'); }
+}
+
 async function saveMealPlanSlot(inputEl) {
   const y = inputEl.dataset.year, w = inputEl.dataset.week, day = inputEl.dataset.day;
   const dinner = (inputEl.value || '').trim();
+  const row = inputEl.closest('.mealplan-row');
+  const recipeId = row?.dataset.recipeId || '';
+  const servings = row?.dataset.recipeServings || '';
   await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
     method: 'PUT',
-    body: JSON.stringify({ dinner }),
+    body: JSON.stringify({ dinner, recipe_id: recipeId ? parseInt(recipeId, 10) : null, recipe_servings: servings ? parseInt(servings, 10) : null }),
   });
 }
+
+// ── Recipes ──
+let allRecipes = [];
+async function loadRecipes() {
+  const q = document.getElementById('recipes-search')?.value?.trim() || '';
+  const url = q ? `/recipes?q=${encodeURIComponent(q)}` : '/recipes';
+  allRecipes = await api(url);
+  const listEl = document.getElementById('recipes-list');
+  if (!listEl) return;
+  if (!allRecipes.length) {
+    listEl.innerHTML = '<p style="color:var(--muted)">No recipes yet. Sync from Obsidian or add manually.</p>';
+    return;
+  }
+  listEl.innerHTML = allRecipes.map(r => {
+    const stars = r.rating_avg != null ? '★'.repeat(Math.round(r.rating_avg)) + '☆'.repeat(5 - Math.round(r.rating_avg)) : '—';
+    return `<div class="recipe-card" data-recipe-id="${r.id}" onclick="showRecipeDetail(${r.id})">
+      <h4>${escapeHtml(r.name)}</h4>
+      <div class="recipe-meta">${r.default_servings} servings · ${(r.ingredients || []).length} ingredients</div>
+      <div class="recipe-stars" title="Rating">${stars}</div>
+    </div>`;
+  }).join('');
+}
+
+function recipeStarsWidget(current, recipeId) {
+  let html = '<span class="recipe-stars">';
+  for (let i = 1; i <= 5; i++) {
+    html += `<button type="button" class="btn-sm" style="padding:2px 4px;min-width:28px" onclick="rateRecipe(${recipeId}, ${i})" title="Rate ${i}">${i <= (current || 0) ? '★' : '☆'}</button>`;
+  }
+  html += '</span>';
+  return html;
+}
+
+async function showRecipeDetail(recipeId) {
+  const r = await api(`/recipes/${recipeId}`);
+  const ingredientsList = (r.ingredients || []).map(i => `<li>${i.quantity} ${i.unit} ${i.name}</li>`).join('');
+  const body = `
+    <div class="recipe-detail-ingredients"><strong>Ingredients</strong> (${r.default_servings} servings)<ul>${ingredientsList}</ul></div>
+    ${r.directions ? `<div style="margin-top:12px"><strong>Directions</strong><pre style="white-space:pre-wrap;font-size:.85rem;margin-top:4px">${escapeHtml(r.directions)}</pre></div>` : ''}
+    <p style="margin-top:12px">${recipeStarsWidget(r.user_rating, r.id)}</p>
+    <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+      <button type="button" class="btn-primary btn-sm" onclick="addRecipeToMealPlanFromModal(${r.id}, '${escapeHtml(r.name)}')">Add to meal plan</button>
+      <button type="button" class="btn-sm" onclick="addRecipeToListFromModal(${r.id}, ${r.default_servings})">Add ingredients to list</button>
+    </div>`;
+  modal('Recipe: ' + r.name, body, () => closeModal());
+}
+
+async function rateRecipe(recipeId, rating) {
+  await api(`/recipes/${recipeId}/rate`, { method: 'POST', body: JSON.stringify({ rating }) });
+  const r = await api(`/recipes/${recipeId}`);
+  const card = document.querySelector(`.recipe-card[data-recipe-id="${recipeId}"]`);
+  if (card && card.querySelector('.recipe-stars')) {
+    const stars = r.rating_avg != null ? '★'.repeat(Math.round(r.rating_avg)) + '☆'.repeat(5 - Math.round(r.rating_avg)) : '—';
+    card.querySelector('.recipe-stars').innerHTML = stars;
+  }
+  toast('Rated');
+}
+
+async function addRecipeToMealPlanFromModal(recipeId, recipeName) {
+  const [y, w] = mealPlanGetYw();
+  const day = prompt('Day (1=Mon .. 5=Fri):', '1');
+  if (day == null) return;
+  const d = parseInt(day, 10);
+  if (d < 1 || d > 5) { toast('Use 1–5'); return; }
+  const servings = prompt('Servings for this meal:', '4');
+  const serv = servings ? parseInt(servings, 10) : 4;
+  await api(`/meal-plan/slot?year=${y}&week=${w}&day=${d}`, {
+    method: 'PUT',
+    body: JSON.stringify({ dinner: recipeName, recipe_id: recipeId, recipe_servings: serv }),
+  });
+  toast('Added to meal plan');
+  closeModal();
+  loadMealPlan();
+}
+
+async function addRecipeToListFromModal(recipeId, defaultServings) {
+  const lists = await api('/lists');
+  if (!lists.length) { toast('Create a list first'); return; }
+  const currentListId = document.getElementById('list-select')?.value;
+  const listId = currentListId ? parseInt(currentListId, 10) : lists[0].id;
+  const servings = prompt('Servings (ingredients scaled):', String(defaultServings));
+  const serv = servings ? parseInt(servings, 10) : defaultServings;
+  if (!serv) return;
+  try {
+    const res = await api(`/recipes/${recipeId}/add-to-list?list_id=${listId}&servings=${serv}`);
+    toast(`Added ${res.added.length} ingredients${res.skipped.length ? '; ' + res.skipped.length + ' not in library' : ''}`);
+    closeModal();
+    if (document.getElementById('list-select')) loadShoppingList();
+  } catch (e) {
+    toast(e.message || 'Failed');
+  }
+}
+
+document.getElementById('recipes-sync-obsidian')?.addEventListener('click', async () => {
+  const path = prompt('Obsidian vault path to recipe .md (e.g. Recipes/Pasta.md):');
+  if (!path?.trim()) return;
+  try {
+    await api(`/recipes/sync-obsidian?path=${encodeURIComponent(path.trim())}`);
+    toast('Synced');
+    loadRecipes();
+  } catch (e) {
+    toast(e.message || 'Sync failed');
+  }
+});
+
+async function openAddWeekToListModal() {
+  const [y, w] = mealPlanGetYw();
+  let ingredients;
+  try {
+    ingredients = await api(`/recipes/meal-plan/week-ingredients?year=${y}&week=${w}`);
+  } catch (_) {
+    ingredients = [];
+  }
+  if (!ingredients.length) {
+    toast('No recipe-linked meals this week, or add recipes to meal plan first.');
+    return;
+  }
+  const listId = document.getElementById('list-select')?.value || (await api('/lists'))[0]?.id;
+  if (!listId) { toast('Create a list first'); return; }
+  const rows = ingredients.map((ing, i) =>
+    `<tr><td><input type="checkbox" checked data-i="${i}"></td><td>${escapeHtml(ing.name)}</td>
+     <td><input type="number" step="0.01" min="0" value="${ing.quantity}" data-i="${i}" style="width:70px"></td>
+     <td>${escapeHtml(ing.unit)}</td></tr>`).join('');
+  const body = `<p style="color:var(--muted);margin-bottom:12px">Review and edit quantities, then add to list.</p>
+    <table><thead><tr><th>Add</th><th>Ingredient</th><th>Qty</th><th>Unit</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="modal-actions"><button type="button" class="btn-primary" id="week-to-list-confirm">Add to list</button></div>`;
+  modal('Add week ingredients to list', body, () => {});
+  document.getElementById('week-to-list-confirm').onclick = async () => {
+    const tbody = document.querySelector('#modal-container table tbody');
+    const out = [];
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const cb = tr.querySelector('input[type=checkbox]');
+      const qtyInput = tr.querySelector('input[type=number]');
+      if (cb?.checked && qtyInput) {
+        const i = parseInt(qtyInput.dataset.i, 10);
+        const ing = ingredients[i];
+        if (ing) out.push({ name: ing.name, quantity: parseFloat(qtyInput.value) || 0, unit: ing.unit });
+      }
+    });
+    await api(`/recipes/meal-plan/add-week-to-list?list_id=${listId}&year=${y}&week=${w}`, {
+      method: 'POST',
+      body: JSON.stringify(out),
+    });
+    toast('Added to list');
+    closeModal();
+    loadShoppingList();
+  };
+}
+
+document.getElementById('mealplan-add-week-to-list')?.addEventListener('click', openAddWeekToListModal);
 
 // ── Recent Purchases (expiration only here) ──
 async function loadRecentPurchases() {

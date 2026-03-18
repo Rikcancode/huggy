@@ -149,6 +149,37 @@ class RepurchaseReminder(Base):
     library_item = relationship("LibraryItem", back_populates="reminders")
 
 
+class Recipe(Base):
+    """Recipe from Obsidian or manual entry. Ingredients stored as JSON."""
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(300), nullable=False)
+    source_path = Column(String(500), nullable=True)  # e.g. Obsidian vault path
+    default_servings = Column(Integer, nullable=False, default=4)
+    ingredients = Column(JSONType, default=list)  # [{"name": str, "quantity": float, "unit": str}, ...]
+    directions = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    ratings = relationship("RecipeRating", back_populates="recipe", cascade="all, delete-orphan")
+
+
+class RecipeRating(Base):
+    """User rating for a recipe (1-5)."""
+    __tablename__ = "recipe_ratings"
+    __table_args__ = (UniqueConstraint("user_id", "recipe_id", name="uq_recipe_rating_user_recipe"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
+    rating = Column(Integer, nullable=False)  # 1-5
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+    recipe = relationship("Recipe", back_populates="ratings")
+
+
 class MealPlanEntry(Base):
     """Evening meal (dinner) for a weekday. day 1=Monday .. 5=Friday."""
     __tablename__ = "meal_plan_entries"
@@ -158,4 +189,8 @@ class MealPlanEntry(Base):
     year = Column(Integer, nullable=False)
     week = Column(Integer, nullable=False)  # ISO week 1-53
     day = Column(Integer, nullable=False)   # 1=Monday .. 5=Friday
-    dinner = Column(String(300), nullable=False, default="")  # free text; later: recipe ref
+    dinner = Column(String(300), nullable=False, default="")  # free text or recipe name
+    recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True)
+    recipe_servings = Column(Integer, nullable=True)  # override for this slot; null = use recipe default
+
+    recipe = relationship("Recipe", foreign_keys=[recipe_id])

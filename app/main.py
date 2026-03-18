@@ -10,7 +10,7 @@ from sqlalchemy import text
 from app.database import engine, SessionLocal, Base
 from app.config import settings
 from app.seed import seed_database
-from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan
+from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes
 from app.ws import ConnectionManager
 
 ws_manager = ConnectionManager()
@@ -60,6 +60,14 @@ def _run_migrations():
             if not any(row[1] == "avatar" for row in r):
                 conn.execute(text("ALTER TABLE users ADD COLUMN avatar TEXT"))
                 conn.commit()
+            # meal_plan_entries recipe link
+            r = conn.execute(text("PRAGMA table_info(meal_plan_entries)"))
+            if not any(row[1] == "recipe_id" for row in r):
+                conn.execute(text("ALTER TABLE meal_plan_entries ADD COLUMN recipe_id INTEGER REFERENCES recipes(id)"))
+                conn.commit()
+            if not any(row[1] == "recipe_servings" for row in r):
+                conn.execute(text("ALTER TABLE meal_plan_entries ADD COLUMN recipe_servings INTEGER"))
+                conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 
@@ -102,6 +110,7 @@ app.include_router(reminders.router)
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(meal_plan.router)
+app.include_router(recipes.router)
 
 static_dir = Path(__file__).parent / "static"
 uploads_dir = Path(settings.upload_dir) if settings.upload_dir else Path(__file__).resolve().parent.parent / "uploads"

@@ -59,10 +59,14 @@ def set_day(
         .first()
     )
     if not row:
-        row = MealPlanEntry(year=year, week=week, day=day, dinner=data.dinner)
+        row = MealPlanEntry(year=year, week=week, day=day, dinner=data.dinner, recipe_id=data.recipe_id, recipe_servings=data.recipe_servings)
         db.add(row)
     else:
         row.dinner = data.dinner
+        if data.recipe_id is not None:
+            row.recipe_id = data.recipe_id
+        if data.recipe_servings is not None:
+            row.recipe_servings = data.recipe_servings
     db.commit()
     db.refresh(row)
     return row

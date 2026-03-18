@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     setup_token: str = ""
     seed_on_startup: bool = True
     upload_dir: str = ""
+    obsidian_api_url: str = ""
+    obsidian_api_key: str = ""
 
     model_config = {"env_prefix": "GROCERY_"}
 

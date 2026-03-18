@@ -248,6 +248,48 @@ class UserLogin(BaseModel):
     password: str
 
 
+# ---------- Recipe ----------
+
+class RecipeIngredient(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+
+
+class RecipeOut(BaseModel):
+    id: int
+    name: str
+    source_path: str | None
+    default_servings: int
+    ingredients: list[RecipeIngredient]
+    directions: str | None
+    created_at: datetime
+    updated_at: datetime
+    rating_avg: float | None = None
+    rating_count: int = 0
+    user_rating: int | None = None
+    model_config = {"from_attributes": True}
+
+
+class RecipeCreate(BaseModel):
+    name: str
+    source_path: str | None = None
+    default_servings: int = 4
+    ingredients: list[RecipeIngredient]
+    directions: str | None = None
+
+
+class RecipeUpdate(BaseModel):
+    name: str | None = None
+    default_servings: int | None = None
+    ingredients: list[RecipeIngredient] | None = None
+    directions: str | None = None
+
+
+class RecipeRatingUpdate(BaseModel):
+    rating: int  # 1-5
+
+
 # ---------- Meal Plan ----------
 
 class MealPlanEntryOut(BaseModel):
@@ -256,8 +298,12 @@ class MealPlanEntryOut(BaseModel):
     week: int
     day: int  # 1=Mon .. 5=Fri
     dinner: str
+    recipe_id: int | None = None
+    recipe_servings: int | None = None
     model_config = {"from_attributes": True}
 
 
 class MealPlanDayUpdate(BaseModel):
     dinner: str = ""
+    recipe_id: int | None = None
+    recipe_servings: int | None = None
