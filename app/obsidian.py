@@ -74,11 +74,18 @@ def obsidian_list_folder(path: str = "") -> list[str] | None:
 
 
 # ---- Recipe parsing from markdown ----
-# Matches lines like "180 grams butter", "3 eggs", "1/2 cup flour", "salt to taste"
+# Matches lines like:
+# - "- 180 grams butter"
+# - "- 3 eggs"
+# - "- 1/2 cup flour"
+# - "- salt to taste" (no leading quantity; returned as quantity=1)
 _ING_LINE = re.compile(
     r"^\s*[-*]\s*"
-    r"(?:(?P<qty>[0-9]+(?:\.[0-9]+)?(?:\s*/\s*[0-9]+)?)\s+"
-    r"(?P<unit>(?:grams?|g|kg|ml|milliliters?|liters?|l|cup|cups|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|cloves?|pinch|to taste|pieces?|slices?|cans?|bunches?|sprigs?)\b\s+)?"
+    # Optional leading quantity (supports decimals and simple fractions: 1/2, 1.5/2)
+    r"(?:(?P<qty>[0-9]+(?:\.[0-9]+)?(?:\s*/\s*[0-9]+(?:\.[0-9]+)?)?)\s*)?"
+    # Optional unit right after quantity
+    r"(?:(?P<unit>(?:grams?|g|kg|ml|milliliters?|liters?|l|cup|cups|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|cloves?|pinch|pieces?|slices?|cans?|bunches?|sprigs?|to taste))\s*)?"
+    # Remaining text is the ingredient name
     r"(?P<name>.+?)\s*$",
     re.IGNORECASE,
 )
