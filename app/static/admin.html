@@ -1718,7 +1718,9 @@ document.getElementById('recipes-sync-obsidian-folder')?.addEventListener('click
   const folder = 'Family/Recipes/';
   if (btn) btn.disabled = true;
   try {
-    const res = await api(`/recipes/sync-obsidian-folder?path=${encodeURIComponent(folder)}&recursive=true`);
+    const res = await api(`/recipes/sync-obsidian-folder?path=${encodeURIComponent(folder)}&recursive=true`, {
+      method: 'POST',
+    });
     const failed = Array.isArray(res?.failed) ? res.failed : [];
     const summary = `Synced ${res?.synced ?? 0} notes (${res?.updated ?? 0} updated, ${res?.skipped ?? 0} skipped).`;
     if (!failed.length) {
