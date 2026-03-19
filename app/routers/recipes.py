@@ -198,6 +198,9 @@ def _upsert_recipe_from_obsidian_path(
     return True, was_update, None
 
 
+# GET + POST: some clients (cached UI, browser prefetch) hit this with GET; without GET,
+# FastAPI matches GET /api/recipes/sync-obsidian-folder to GET /{recipe_id} → 422.
+@router.get("/sync-obsidian-folder", response_model=ObsidianSyncFolderResult)
 @router.post("/sync-obsidian-folder", response_model=ObsidianSyncFolderResult)
 def sync_from_obsidian_folder(
     path: str = Query(..., description="Vault folder path, e.g. Family/Recipes/"),
