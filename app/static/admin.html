@@ -439,7 +439,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   <div id="panel-recipes" class="panel">
     <div class="toolbar">
       <input id="recipes-search" placeholder="Search recipes…" oninput="loadRecipes()" style="max-width:280px">
-      <button type="button" class="btn-sm" id="recipes-sync-obsidian" title="Sync one recipe from Obsidian by path">Sync from Obsidian</button>
+      <button type="button" class="btn-sm" id="recipes-sync-obsidian-folder" title="Force sync all recipes from Obsidian folder">Sync all from Obsidian</button>
     </div>
     <div id="recipes-list" class="recipes-grid"></div>
   </div>
@@ -1631,7 +1631,7 @@ async function loadRecipes() {
   const listEl = document.getElementById('recipes-list');
   if (!listEl) return;
   if (!allRecipes.length) {
-    listEl.innerHTML = '<p style="color:var(--muted)">No recipes yet. Sync from Obsidian or add manually.</p>';
+    listEl.innerHTML = '<p style="color:var(--muted)">No recipes yet. Use "Sync all from Obsidian" to import recipes.</p>';
     return;
   }
   listEl.innerHTML = allRecipes.map(r => {
@@ -1713,15 +1713,35 @@ async function addRecipeToListFromModal(recipeId, defaultServings) {
   }
 }
 
-document.getElementById('recipes-sync-obsidian')?.addEventListener('click', async () => {
-  const path = prompt('Obsidian vault path to recipe .md (e.g. Recipes/Pasta.md):');
-  if (!path?.trim()) return;
+document.getElementById('recipes-sync-obsidian-folder')?.addEventListener('click', async () => {
+  const btn = document.getElementById('recipes-sync-obsidian-folder');
+  const folder = 'Family/Recipes/';
+  if (btn) btn.disabled = true;
   try {
-    await api(`/recipes/sync-obsidian?path=${encodeURIComponent(path.trim())}`);
-    toast('Synced');
+    const res = await api(`/recipes/sync-obsidian-folder?path=${encodeURIComponent(folder)}&recursive=true`);
+    const failed = Array.isArray(res?.failed) ? res.failed : [];
+    const summary = `Synced ${res?.synced ?? 0} notes (${res?.updated ?? 0} updated, ${res?.skipped ?? 0} skipped).`;
+    if (!failed.length) {
+      toast(summary);
+    } else {
+      const rows = failed.slice(0, 50).map(x =>
+        `<tr><td style="font-size:.85rem">${escapeHtml(x.path || '')}</td><td style="font-size:.85rem;color:var(--muted)">${escapeHtml(x.error || 'Unknown error')}</td></tr>`
+      ).join('');
+      const more = failed.length > 50 ? `<p style="color:var(--muted);margin-top:8px">Showing first 50 of ${failed.length} errors.</p>` : '';
+      modal(
+        'Obsidian Sync Completed with Errors',
+        `<p style="margin:0 0 10px">${escapeHtml(summary)}</p>
+         <p style="margin:0 0 8px;color:var(--muted)">Failed: ${failed.length}</p>
+         <table><thead><tr><th>Path</th><th>Error</th></tr></thead><tbody>${rows}</tbody></table>${more}
+         <p style="color:var(--muted);margin-top:10px">Click Save to close this report.</p>`,
+        closeModal
+      );
+    }
     loadRecipes();
   } catch (e) {
-    toast(e.message || 'Sync failed');
+    toast(e.message || 'Folder sync failed');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 });
 
