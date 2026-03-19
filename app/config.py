@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     obsidian_recipes_folder: str = "Family/Recipes/"
     # Safety limit when auto-syncing a folder on first recipe list access.
     obsidian_recipes_max_files: int = 5000
+    # Keep recipe DB in sync with Obsidian automatically.
+    obsidian_recipes_auto_sync: bool = True
+    # Minimum seconds between automatic folder sync attempts.
+    obsidian_recipes_sync_interval_seconds: int = 300
 
     model_config = {"env_prefix": "GROCERY_"}
 

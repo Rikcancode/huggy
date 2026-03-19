@@ -2,6 +2,7 @@
 Recipes: CRUD, Obsidian sync, ratings, add ingredients to list, week aggregation.
 """
 from datetime import date
+import time
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -21,6 +22,7 @@ from app.obsidian import obsidian_available, obsidian_get_file, obsidian_list_fo
 from app.config import settings
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
+_last_obsidian_auto_sync_ts: float = 0.0
 
 
 def _recipe_to_out(r: Recipe, user_id: int | None, db: Session) -> RecipeOut:
@@ -48,14 +50,17 @@ def list_recipes(
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # If mecouu asks for "all recipes" (q is empty), auto-sync once so
-    # the DB becomes searchable without manual path entry.
-    if not q:
-        existing_count = db.query(Recipe).count()
-        if existing_count == 0 and obsidian_available():
-            folder = (settings.obsidian_recipes_folder or "").strip()
-            if folder:
-                # Best-effort auto-sync; if it fails, we just fall back to DB state.
+    # Keep DB in sync with Obsidian so current + future recipes are searchable
+    # without manually entering note paths in the UI.
+    if settings.obsidian_recipes_auto_sync and obsidian_available():
+        folder = (settings.obsidian_recipes_folder or "").strip()
+        if folder:
+            now = time.time()
+            global _last_obsidian_auto_sync_ts
+            interval = max(10, settings.obsidian_recipes_sync_interval_seconds)
+            should_sync = (now - _last_obsidian_auto_sync_ts) >= interval
+            if should_sync:
+                # Best-effort auto-sync; if it fails, continue serving DB results.
                 try:
                     sync_from_obsidian_folder(
                         path=folder,
@@ -64,6 +69,7 @@ def list_recipes(
                         user=user,
                         db=db,
                     )
+                    _last_obsidian_auto_sync_ts = now
                 except HTTPException:
                     pass
 

@@ -3,6 +3,7 @@ name: huggy
 services:
   huggy:
     image: docker.io/rikcodes/huggy:latest
+    pull_policy: always
     container_name: huggy
     ports:
       - mode: ingress
@@ -21,6 +22,8 @@ services:
       - GROCERY_OBSIDIAN_API_KEY=replace-with-your-obsidian-local-rest-api-key
       - GROCERY_OBSIDIAN_RECIPES_FOLDER=Family/Recipes/
       - GROCERY_OBSIDIAN_RECIPES_MAX_FILES=5000
+      - GROCERY_OBSIDIAN_RECIPES_AUTO_SYNC=true
+      - GROCERY_OBSIDIAN_RECIPES_SYNC_INTERVAL_SECONDS=300
     volumes:
       - type: bind
         source: /DATA/AppData/huggy/data
