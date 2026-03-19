@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     upload_dir: str = ""
     obsidian_api_url: str = ""
     obsidian_api_key: str = ""
+    # Vault-relative folder that contains recipe markdown notes.
+    # Example: "Family/Recipes/"
+    obsidian_recipes_folder: str = "Family/Recipes/"
+    # Safety limit when auto-syncing a folder on first recipe list access.
+    obsidian_recipes_max_files: int = 5000
 
     model_config = {"env_prefix": "GROCERY_"}
 

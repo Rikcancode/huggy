@@ -290,6 +290,16 @@ class RecipeRatingUpdate(BaseModel):
     rating: int  # 1-5
 
 
+class ObsidianSyncFolderResult(BaseModel):
+    """Result of syncing a folder of .md notes from Obsidian into the app database."""
+
+    synced: int = 0  # number of notes successfully parsed + written
+    updated: int = 0  # number of existing notes updated (vs inserted)
+    skipped: int = 0  # number of notes skipped (not parseable / no ingredients)
+    failed: list[dict] = []  # [{'path': str, 'error': str}, ...]
+
+
+
 # ---------- Meal Plan ----------
 
 class MealPlanEntryOut(BaseModel):

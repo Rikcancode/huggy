@@ -3,6 +3,7 @@ Obsidian Local REST API client and recipe markdown parser.
 Set GROCERY_OBSIDIAN_API_URL and optionally GROCERY_OBSIDIAN_API_KEY.
 """
 import re
+from urllib.parse import quote
 import httpx
 from app.config import settings
 
@@ -34,7 +35,9 @@ def obsidian_get_file(vault_path: str) -> str | None:
         with _client() as c:
             if c is None:
                 return None
-            r = c.get(f"/vault/{vault_path}")
+            # Obsidian vault paths can contain spaces / emoji; URL-encode each segment.
+            encoded_path = "/".join(quote(seg, safe="") for seg in vault_path.split("/"))
+            r = c.get(f"/vault/{encoded_path}")
             if r.status_code != 200:
                 return None
             return r.text
@@ -62,9 +65,13 @@ def obsidian_list_folder(path: str = "") -> list[str] | None:
         with _client() as c:
             if c is None:
                 return None
-            url = "/vault/" + path if path else "/vault/"
-            if path and not path.endswith("/"):
-                url += "/"
+            if not path:
+                url = "/vault/"
+            else:
+                trailing_slash = path.endswith("/")
+                raw = path.rstrip("/")
+                encoded_path = "/".join(quote(seg, safe="") for seg in raw.split("/") if seg)
+                url = "/vault/" + encoded_path + "/"
             r = c.get(url)
             if r.status_code != 200:
                 return None
@@ -103,7 +110,12 @@ def parse_ingredient_line(line: str) -> dict | None:
         qty_str = m.group("qty")
         unit = (m.group("unit") or "unit").strip()
         name = (m.group("name") or "").strip()
-        if "/" in qty_str:
+
+        # Quantity is optional in Obsidian notes (e.g. "- Oregano").
+        # When missing, treat as 1 unit (unit will typically be "unit").
+        if not qty_str:
+            qty = 1.0
+        elif "/" in qty_str:
             a, b = qty_str.split("/", 1)
             qty = float(a.strip()) / float(b.strip())
         else:

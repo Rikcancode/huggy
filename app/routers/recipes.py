@@ -14,9 +14,11 @@ from app.schemas import (
     RecipeUpdate,
     RecipeRatingUpdate,
     RecipeIngredient,
+    ObsidianSyncFolderResult,
 )
 from app.auth import get_current_user
 from app.obsidian import obsidian_available, obsidian_get_file, obsidian_list_folder, parse_recipe_markdown
+from app.config import settings
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 
@@ -46,6 +48,25 @@ def list_recipes(
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # If mecouu asks for "all recipes" (q is empty), auto-sync once so
+    # the DB becomes searchable without manual path entry.
+    if not q:
+        existing_count = db.query(Recipe).count()
+        if existing_count == 0 and obsidian_available():
+            folder = (settings.obsidian_recipes_folder or "").strip()
+            if folder:
+                # Best-effort auto-sync; if it fails, we just fall back to DB state.
+                try:
+                    sync_from_obsidian_folder(
+                        path=folder,
+                        recursive=True,
+                        max_files=settings.obsidian_recipes_max_files,
+                        user=user,
+                        db=db,
+                    )
+                except HTTPException:
+                    pass
+
     query = db.query(Recipe)
     if q:
         query = query.filter(Recipe.name.ilike(f"%{q}%"))
@@ -105,6 +126,152 @@ def sync_from_obsidian(
     db.commit()
     db.refresh(recipe)
     return _recipe_to_out(recipe, user.id, db)
+
+
+def _normalize_obsidian_relpath(p: str) -> str:
+    # API expects vault-relative paths, without a leading slash.
+    return p.lstrip("/")
+
+
+def _join_folder_and_entry(folder: str, entry: str) -> str:
+    """
+    Join a folder path (vault-relative, no leading slash) and a listing entry.
+
+    Obsidian may return entries as either:
+    - full relative paths (containing "/"), or
+    - just names (no "/") inside the folder.
+    """
+    folder = _normalize_obsidian_relpath(folder).rstrip("/")
+    entry = _normalize_obsidian_relpath(entry)
+    if not entry:
+        return folder
+    if "/" in entry:
+        return entry
+    if folder:
+        return f"{folder}/{entry}"
+    return entry
+
+
+def _upsert_recipe_from_obsidian_path(
+    *,
+    db: Session,
+    vault_path: str,
+) -> tuple[bool, bool, str | None]:
+    """
+    Upsert a single Obsidian note into the recipes table.
+
+    Returns (success, was_update, error_message_if_any).
+    "success" is false for parse failures / no ingredients.
+    """
+    raw = obsidian_get_file(vault_path)
+    if not raw:
+        return False, False, "File not found or unreadable"
+    parsed = parse_recipe_markdown(raw)
+    if not parsed or not parsed.get("ingredients"):
+        return False, False, "Could not parse recipe (no ingredients section?)"
+
+    existing = db.query(Recipe).filter(Recipe.source_path == vault_path).first()
+    was_update = existing is not None
+    if existing:
+        existing.name = parsed["name"]
+        existing.default_servings = parsed.get("default_servings", 4)
+        existing.ingredients = parsed["ingredients"]
+        existing.directions = parsed.get("directions")
+        db.commit()
+        return True, was_update, None
+
+    recipe = Recipe(
+        name=parsed["name"],
+        source_path=vault_path,
+        default_servings=parsed.get("default_servings", 4),
+        ingredients=parsed["ingredients"],
+        directions=parsed.get("directions"),
+    )
+    db.add(recipe)
+    db.commit()
+    return True, was_update, None
+
+
+@router.post("/sync-obsidian-folder", response_model=ObsidianSyncFolderResult)
+def sync_from_obsidian_folder(
+    path: str = Query(..., description="Vault folder path, e.g. Family/Recipes/"),
+    recursive: bool = Query(True, description="Recurse into nested subfolders"),
+    max_files: int = Query(1000, ge=1, le=50000, description="Safety limit for discovered notes"),
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Sync all Obsidian recipe notes under a folder into the app DB.
+
+    This enables `GET /api/recipes?q=...` to find recipes by name.
+    """
+    if not obsidian_available():
+        raise HTTPException(503, "Obsidian API not configured or unreachable")
+
+    folder = _normalize_obsidian_relpath(path)
+    folder = folder.rstrip("/")
+    if not folder:
+        raise HTTPException(400, "Folder path is required")
+
+    synced = 0
+    updated = 0
+    skipped = 0
+    failed: list[dict] = []
+
+    # BFS traversal to avoid deep recursion.
+    queue: list[str] = [folder]
+    visited: set[str] = set()
+    discovered_files = 0
+
+    while queue and discovered_files < max_files:
+        current = queue.pop(0)
+        if current in visited:
+            continue
+        visited.add(current)
+
+        entries = obsidian_list_folder(current + "/")
+        if not entries:
+            continue
+
+        for entry in entries:
+            # Normalize listing entry to a usable vault-relative path
+            # (keep directory trailing slash if present).
+            if isinstance(entry, str):
+                full_path = _join_folder_and_entry(current, entry)
+            elif isinstance(entry, dict):
+                full_path = _join_folder_and_entry(current, str(entry.get("path") or entry.get("name") or ""))
+            else:
+                continue
+
+            if not full_path:
+                continue
+
+            # Directories are expected to be returned with a trailing '/' by the Obsidian plugin.
+            is_dir = full_path.endswith("/")
+            full_path_norm = full_path.rstrip("/")
+
+            if is_dir:
+                if recursive:
+                    queue.append(full_path_norm)
+                continue
+
+            # Only sync markdown notes.
+            if not full_path_norm.lower().endswith(".md"):
+                skipped += 1
+                continue
+
+            discovered_files += 1
+            ok, was_update, err = _upsert_recipe_from_obsidian_path(db=db, vault_path=full_path_norm)
+            if ok:
+                synced += 1
+                if was_update:
+                    updated += 1
+            else:
+                failed.append({"path": full_path_norm, "error": err or "Unknown error"})
+
+    # Normalize "updated": if we couldn't approximate well, still provide synced count.
+    # But the UI consumer can rely on `synced` as the main metric.
+    return ObsidianSyncFolderResult(synced=synced, updated=updated, skipped=skipped, failed=failed)
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
