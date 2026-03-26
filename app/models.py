@@ -77,6 +77,7 @@ class GroceryList(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
+    icon = Column(String(10), nullable=True, default="🛒")
     is_active = Column(Boolean, default=True)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

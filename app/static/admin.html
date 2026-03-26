@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mechou — Admin</title>
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/static/icon.svg">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,14 +21,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sa
   background: var(--bg); color: var(--text); line-height: 1.5; }
 
 .app { max-width: 1100px; margin: 0 auto; padding: 16px; }
-.app-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
-.app-header { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-.app-logo { width: 48px; height: 48px; color: var(--text); flex-shrink: 0; }
+.app-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
+.app-header { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.app-logo { width: 34px; height: 34px; color: var(--text); flex-shrink: 0; }
 .app-logo svg { width: 100%; height: 100%; display: block; }
-.app-brand { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 1.85rem; letter-spacing: -0.02em; color: var(--text); }
+.app-brand { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 1.45rem; letter-spacing: -0.02em; color: var(--text); }
 h2 { font-size: 1.15rem; color: var(--muted); margin-bottom: 16px; }
 
-.nav-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.nav-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .nav-toggle { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0;
   border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--surface); color: var(--text); cursor: pointer; font-size: 1.4rem; }
@@ -96,10 +96,33 @@ button:hover, .btn:hover { border-color: var(--accent); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-danger { color: var(--red); }
-.btn-purchase { background: var(--green); border-color: var(--green); color: #000; }
+.btn-purchase {
+  background: var(--green); border-color: var(--green); color: #000;
+  border-radius: 50%; width: 32px; height: 32px; min-width: 32px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: transform .15s ease, filter .15s ease;
+}
 .btn-unpurchase { border-color: var(--accent); color: var(--accent); }
 .btn-unpurchase:hover { background: var(--accent); color: #fff; }
-.btn-purchase:hover { filter: brightness(1.1); }
+.btn-purchase:hover { filter: brightness(1.15); transform: scale(1.05); }
+@keyframes purchase-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); box-shadow: 0 0 0 8px rgba(80,200,120,.22); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+.btn-purchase.pop { animation: purchase-pop .38s ease-out forwards; }
+.btn-purchase svg { stroke-width: 3.5; }
+@keyframes item-out {
+  0%   { opacity: 1; transform: translateX(0); max-height: 120px; }
+  60%  { opacity: 0; transform: translateX(18px); }
+  100% { opacity: 0; transform: translateX(18px); max-height: 0; margin: 0; padding: 0; }
+}
+@keyframes item-in {
+  0%   { opacity: 0; transform: translateX(-18px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.list-item.animating-out { animation: item-out .32s ease-in forwards; overflow: hidden; pointer-events: none; }
+.list-item.animating-in  { animation: item-in  .28s ease-out both; }
 .btn-sm { padding: 3px 8px; font-size: .78rem; }
 
 input, select, textarea { padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border);
@@ -112,7 +135,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
 .toolbar input { max-width: 300px; }
-.list-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.list-header-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .list-title-select {
   font-family: 'Fredoka', sans-serif;
   font-size: 1.5rem;
@@ -137,10 +160,24 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-title-select option { font-size: 0.95rem; font-weight: normal; background: var(--surface); color: var(--text); }
 .btn-new-list { flex-shrink: 0; }
 .list-pending-count { font-size: .9rem; font-weight: 700; color: #d4a017; margin: -8px 0 12px 0; }
-.list-actions-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-.list-actions-row select { max-width: 200px; height: 38px; box-sizing: border-box; }
-.list-actions-row #btn-open-add-overlay { height: 38px; padding: 0 20px; margin-left: auto; flex-shrink: 0; }
+.btn-add-circle { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; padding: 0;
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  font-size: 1.5rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-left: auto; }
+.btn-add-circle:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.lib-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.lib-card-top { display: flex; align-items: center; gap: 8px; }
+.lib-card-icon { font-size: 1.6rem; flex-shrink: 0; }
+.lib-card-name { font-weight: 600; font-size: .9rem; line-height: 1.3; }
+.lib-card-cat { font-size: .75rem; color: var(--muted); }
+.lib-card-qty { font-size: .78rem; color: var(--accent); font-weight: 600; }
+.lib-card-notes { font-size: .72rem; color: var(--muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-card-actions { display: flex; gap: 6px; margin-top: 4px; }
+.lib-card-actions button { flex: 1; }
+.lib-card img.item-thumb { width: 100%; height: 60px; object-fit: cover; border-radius: 4px; }
 .library-categories-details { margin-bottom: 20px; }
 .library-categories-details summary { cursor: pointer; font-weight: 600; color: var(--muted); padding: 8px 0; }
 .library-categories-details summary:hover { color: var(--text); }
@@ -161,6 +198,30 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 .list-group { margin-bottom: 20px; }
 .list-group h3 { font-size: .95rem; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.swipe-row { position: relative; border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+.swipe-row .list-item { margin-bottom: 0; touch-action: pan-y; will-change: transform; transition: transform .25s cubic-bezier(.4,0,.2,1); }
+.swipe-row .list-item.swiping { transition: none; }
+.swipe-row .list-item.swipe-open .actions,
+.swipe-row .list-item.swipe-open .btn-exp-cal { opacity: .25; pointer-events: none; transition: opacity .2s; }
+.swipe-row .list-item .actions,
+.swipe-row .list-item .btn-exp-cal { transition: opacity .2s; }
+.swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; width: 160px; pointer-events: none; }
+.swipe-actions.open { pointer-events: auto; }
+.swipe-btn-replace, .swipe-btn-delete { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; cursor: pointer; font-size: .72rem; font-weight: 600; color: #fff; line-height: 1.2; }
+.swipe-btn-replace { background: var(--accent); }
+.swipe-btn-delete { background: var(--red); }
+.swipe-btn-replace:hover { filter: brightness(1.1); border-color: transparent; }
+.swipe-btn-delete:hover { filter: brightness(1.1); border-color: transparent; }
+@keyframes replace-push-out {
+  0%   { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-110%); opacity: 0; }
+}
+@keyframes replace-slide-in {
+  0%   { transform: translateX(80px); opacity: 0; }
+  100% { transform: translateX(0);    opacity: 1; }
+}
+.swipe-row.replace-out .list-item { animation: replace-push-out .3s cubic-bezier(.4,0,1,1) forwards; pointer-events: none; }
+.swipe-row.replace-in  .list-item { animation: replace-slide-in .38s cubic-bezier(.2,0,.2,1) both; }
 .list-item {
   display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -194,6 +255,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .qty-edit .qty-input { width: 48px; text-align: center; }
 .list-item .list-item-row .name { flex: 1; min-width: 0; }
+.item-tappable { cursor: pointer; user-select: none; }
 .sounds-toggle { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; font-size: .9rem; color: var(--muted); cursor: pointer; user-select: none; }
 .sounds-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
 .sounds-toggle .toggle-track { display: inline-block; width: 36px; height: 20px; border-radius: 10px; background: var(--border); transition: background .2s; flex-shrink: 0; position: relative; }
@@ -213,7 +275,82 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .emoji-picker-grid button:hover { background: var(--border); border-color: var(--accent); }
 .emoji-picker-empty { color: var(--muted); font-size: .9rem; padding: 8px 0; }
 .list-item .unit-select { width: 72px; flex-shrink: 0; padding: 4px 6px; font-size: 0.8rem; }
-.list-item .actions { display: flex; gap: 4px; }
+.list-item .actions { display: flex; gap: 4px; align-items: center; }
+
+/* ── Expiration calendar icon ── */
+.btn-exp-cal {
+  background: none; border: none; padding: 2px; cursor: pointer;
+  color: var(--muted); display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; transition: color .18s, background .18s;
+  flex-shrink: 0;
+}
+.btn-exp-cal:hover { color: var(--orange); background: rgba(251,146,60,.10); border-color: transparent; }
+.btn-exp-cal.has-date { color: var(--orange); }
+
+/* ── Floating calendar popup ── */
+#cal-popup {
+  position: fixed; z-index: 400;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px; width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  display: none;
+  animation: cal-appear .18s ease-out both;
+}
+@keyframes cal-appear {
+  from { opacity: 0; transform: translateY(-6px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.cal-popup-title { font-size: .72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 10px 0; }
+.cal-popup-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-popup-nav button { background: none; border: none; color: var(--text); font-size: 1.1rem; padding: 2px 6px; cursor: pointer; border-radius: 6px; }
+.cal-popup-nav button:hover { background: var(--border); border-color: transparent; }
+.cal-popup-nav span { font-weight: 600; font-size: .88rem; }
+.cal-popup-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-popup-grid .cal-dow { font-size: .68rem; color: var(--muted); text-align: center; padding-bottom: 4px; font-weight: 600; }
+.cal-popup-grid .cal-day {
+  font-size: .8rem; text-align: center; padding: 5px 2px; border-radius: 6px;
+  cursor: pointer; border: none; background: none; color: var(--text);
+  transition: background .12s, color .12s;
+}
+.cal-popup-grid .cal-day:hover { background: var(--border); }
+.cal-popup-grid .cal-day.today { font-weight: 700; color: var(--accent); }
+.cal-popup-grid .cal-day.selected { background: var(--orange); color: #fff; font-weight: 700; }
+.cal-popup-grid .cal-day.empty { cursor: default; }
+.cal-popup-clear { width: 100%; margin-top: 10px; font-size: .78rem; color: var(--red); background: none; border: 1px solid var(--red); border-radius: 6px; padding: 5px 8px; cursor: pointer; opacity: .7; transition: opacity .15s, background .15s; }
+.cal-popup-clear:hover { opacity: 1; background: rgba(239,68,68,.08); }
+.item-edit-panel {
+  display: flex; flex-wrap: nowrap; gap: 6px; align-items: center;
+  padding: 0 0 0 0; margin-top: 0;
+  max-height: 0; overflow: hidden; opacity: 0;
+  border-top: 1px solid transparent;
+  transition: max-height .32s cubic-bezier(.4,0,.2,1), opacity .22s ease,
+              padding .32s cubic-bezier(.4,0,.2,1), margin-top .32s ease,
+              border-color .2s ease;
+}
+.item-edit-panel.open {
+  max-height: 80px; opacity: 1;
+  padding: 8px 0 4px 0; margin-top: 6px;
+  border-top-color: var(--border);
+}
+.item-edit-panel .list-qty-wrap { flex-shrink: 0; }
+.item-edit-panel .unit-select { width: 62px; flex-shrink: 0; }
+.item-edit-panel .btn-item-save,
+.item-edit-panel .btn-item-cancel { flex-shrink: 0; padding: 4px 10px; font-size: .75rem; white-space: nowrap; }
+.list-item { transition: background .3s, box-shadow .25s, border-color .25s; }
+.list-item.is-editing {
+  border-color: var(--accent);
+  box-shadow: 0 3px 16px rgba(0,0,0,.10);
+}
+.item-edit-panel .list-qty-wrap { display: flex; align-items: center; }
+.item-edit-panel .list-qty-minus, .item-edit-panel .list-qty-plus {
+  width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--accent);
+  font-size: .95rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+}
+.item-edit-panel .list-qty-minus:hover, .item-edit-panel .list-qty-plus:hover { filter: brightness(1.2); }
+.item-edit-panel .qty-input { width: 40px; text-align: center; margin: 0; padding: 4px 6px; }
 
 .item-icon { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
 .item-thumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
@@ -260,12 +397,17 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .cal-dot-ok { background: var(--green); }
 
 .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: var(--radius);
-  background: var(--green); color: #000; font-weight: 600; z-index: 200; animation: fadeout 3s forwards; }
-@keyframes fadeout { 0%,70% { opacity: 1; } 100% { opacity: 0; } }
+  background: var(--green); color: #000; font-weight: 600; z-index: 200; animation: fadeout 3000ms forwards; }
+@keyframes fadeout { 0%,75% { opacity: 1; } 100% { opacity: 0; } }
 
 /* Add-items overlay (mobile-first) */
+@keyframes overlay-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
 .add-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 150; display: flex; flex-direction: column;
   max-height: 100vh; max-height: 100dvh; }
+.add-overlay.opening { animation: overlay-slide-up .32s cubic-bezier(.2,0,.2,1) both; }
 .add-overlay-header { flex-shrink: 0; padding: 12px 16px; padding: max(12px, env(safe-area-inset-top)) 16px 12px;
   border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--surface); }
 .add-overlay-title { font-family: 'Fredoka', sans-serif; font-size: 1.25rem; flex: 1; }
@@ -279,19 +421,25 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .add-overlay-search:focus { outline: none; border-color: var(--accent); }
 .add-overlay-list { flex: 1; overflow-y: auto; padding: 8px 16px 24px; -webkit-overflow-scrolling: touch;
   padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-.add-overlay-item { display: flex; align-items: center; gap: 12px; padding: 14px 12px; min-height: 56px;
+.add-overlay-item { display: flex; align-items: center; gap: 12px; padding: 12px;
   border-radius: var(--radius); margin-bottom: 6px; background: var(--surface); border: 1px solid var(--border);
   transition: background .15s; }
 .add-overlay-item:active { background: var(--border); }
-.add-overlay-item.added { opacity: 0.7; }
-.add-overlay-item .item-icon { font-size: 1.5rem; width: 36px; text-align: center; flex-shrink: 0; }
-.add-overlay-item .item-info { flex: 1; min-width: 0; }
-.add-overlay-item .item-name { font-weight: 500; display: block; }
-.add-overlay-item .item-meta { font-size: .8rem; color: var(--muted); }
-.add-overlay-item .item-action { flex-shrink: 0; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
-.add-overlay-item .btn-add { padding: 10px 18px; border-radius: var(--radius); background: var(--accent); border: none;
-  color: #fff; font-weight: 600; cursor: pointer; font-size: .9rem; }
-.add-overlay-item .btn-add:active { opacity: .9; }
+.add-overlay-item.added { opacity: 0.55; }
+.add-overlay-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.add-overlay-item-top { display: flex; align-items: center; gap: 8px; }
+.add-overlay-item .item-icon { font-size: 1.4rem; flex-shrink: 0; line-height: 1; }
+.add-overlay-item .item-name { font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add-overlay-item .item-meta { font-size: .75rem; color: var(--muted); }
+.add-overlay-item .item-action { flex-shrink: 0; display: flex; align-items: center; }
+.btn-add-circle-sm { width: 36px; height: 36px; min-width: 36px; border-radius: 50%; padding: 0;
+  background: var(--accent); border: none; color: #fff;
+  font-size: 1.4rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform .15s, filter .15s; }
+.btn-add-circle-sm:hover { filter: brightness(1.12); transform: scale(1.08); }
+.btn-add-circle-sm:active { transform: scale(.93); }
+.add-overlay-item .badge-added { padding: 6px 12px; border-radius: var(--radius); background: var(--green); color: #000;
+  font-size: .8rem; font-weight: 600; }
 .add-overlay-qty { display: flex; gap: 4px; align-items: center; }
 .add-overlay-qty .add-qty-wrap { display: flex; align-items: center; }
 .add-overlay-qty .add-qty-minus, .add-overlay-qty .add-qty-plus {
@@ -417,16 +565,32 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     </div>
   </div>
 
+  <!-- Expiration date calendar popup (shared, single instance) -->
+  <div id="cal-popup">
+    <p class="cal-popup-title">Earliest expiration date</p>
+    <div class="cal-popup-nav">
+      <button id="cal-prev">&#8249;</button>
+      <span id="cal-month-label"></span>
+      <button id="cal-next">&#8250;</button>
+    </div>
+    <div class="cal-popup-grid" id="cal-grid"></div>
+    <button class="cal-popup-clear" id="cal-clear">Remove date</button>
+  </div>
+
   <!-- SHOPPING LIST -->
   <div id="panel-shopping" class="panel active">
     <div class="list-header-row">
-      <select id="list-select" class="list-title-select" aria-label="Current list"><option value="">Select list…</option></select>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-size:.72rem;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">List</span>
+        <select id="list-select" class="list-title-select" aria-label="Current list"><option value="">Select list…</option></select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-size:.72rem;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Order</span>
+        <select id="supermarket-select" aria-label="Sort by supermarket" style="max-width:160px;height:34px;box-sizing:border-box"><option value="">Default</option></select>
+      </div>
+      <button type="button" class="btn-primary btn-add-circle" id="btn-open-add-overlay" aria-label="Add items">+</button>
     </div>
     <p id="list-pending-count" class="list-pending-count" aria-live="polite">0 items left to buy</p>
-    <div class="list-actions-row">
-      <select id="supermarket-select" aria-label="Sort by supermarket"><option value="">Default order</option></select>
-      <button type="button" class="btn-primary" id="btn-open-add-overlay">+ Add items</button>
-    </div>
     <datalist id="lib-suggestions"></datalist>
     <div id="shopping-content"></div>
     <details id="shopping-activity-details" class="activity-details" style="margin-top:16px">
@@ -503,9 +667,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <button class="btn-primary btn-sm" onclick="showItemModal()">+ New item</button>
       <button type="button" class="btn-sm" onclick="switchToTab('supermarkets')" style="margin-left:auto">Supermarket presets</button>
     </div>
-    <table><thead><tr>
-      <th></th><th>Name</th><th>Category</th><th>Qty</th><th>Unit</th><th>Image</th><th>Notes</th><th>Created by</th><th>🇩🇰</th><th>🇮🇹</th><th>🇧🇬</th><th></th>
-    </tr></thead><tbody id="lib-body"></tbody></table>
+    <div id="lib-body" class="lib-grid"></div>
   </div>
 
   <!-- SUPERMARKETS -->
@@ -540,10 +702,15 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
 <!-- Add-items overlay (mobile-first): sticky search, filterable list, added state -->
 <div id="add-items-overlay" class="add-overlay" style="display:none" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Add items to list">
-  <div class="add-overlay-header">
-    <span class="add-overlay-title">Add items</span>
-    <button type="button" class="btn-primary btn-sm add-overlay-new-item" id="add-overlay-new-item" name="add-overlay-new-item" aria-label="Create new library item">+ New item</button>
-    <button type="button" class="add-overlay-close" id="add-overlay-close" name="add-overlay-close" aria-label="Close">✕</button>
+  <div class="add-overlay-header" style="flex-direction:column;align-items:stretch;gap:8px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="add-overlay-title" id="add-overlay-title">Add items</span>
+      <button type="button" class="btn-primary btn-sm add-overlay-new-item" id="add-overlay-new-item" name="add-overlay-new-item" aria-label="Create new library item">+ New item</button>
+      <button type="button" class="add-overlay-close" id="add-overlay-close" name="add-overlay-close" aria-label="Close">✕</button>
+    </div>
+    <div id="replace-banner" style="display:none;font-size:.82rem;color:var(--muted);padding:6px 10px;background:rgba(123,97,255,.08);border-radius:6px;border:1px solid rgba(123,97,255,.2)">
+      Replacing: <strong id="replace-banner-name"></strong>
+    </div>
   </div>
   <div class="add-overlay-search-wrap">
     <input type="search" class="add-overlay-search" id="add-overlay-search" name="add-overlay-search" placeholder="Search items…" autocomplete="off" aria-label="Search items to add">
@@ -557,52 +724,152 @@ const UNITS = ['unit','pack','grams','kg','liters','ml','bottle','jar','can','bu
 const UNIT_STEP = { unit: 1, pack: 1, grams: 50, kg: 0.5, liters: 0.5, ml: 100, bottle: 1, jar: 1, can: 1, bunch: 1, piece: 1 };
 
 const NAME_TO_EMOJI = {
-  milk: '🥛', bread: '🍞', egg: '🥚', eggs: '🥚', cheese: '🧀', butter: '🧈', yogurt: '🥛', cream: '🥛',
-  chicken: '🍗', meat: '🥩', beef: '🥩', pork: '🥩', fish: '🐟', salmon: '🐟', tuna: '🐟', shrimp: '🦐',
-  apple: '🍎', apples: '🍎', banana: '🍌', bananas: '🍌', orange: '🍊', oranges: '🍊', lemon: '🍋', lemons: '🍋',
-  tomato: '🍅', tomatoes: '🍅', carrot: '🥕', carrots: '🥕', potato: '🥔', potatoes: '🥔', onion: '🧅', onions: '🧅',
-  lettuce: '🥬', salad: '🥬', broccoli: '🥦', pepper: '🫑', cucumber: '🥒', avocado: '🥑', garlic: '🧄',
-  rice: '🍚', pasta: '🍝', noodles: '🍜', cereal: '🥣', flour: '🌾', oats: '🥣',
-  water: '💧', juice: '🧃', coffee: '☕', tea: '🍵', wine: '🍷', beer: '🍺',
-  honey: '🍯', sugar: '🧂', salt: '🧂', oil: '🫒', vinegar: '🫙',
-  pizza: '🍕', burger: '🍔', fries: '🍟', soup: '🍲', sandwich: '🥪',
-  chocolate: '🍫', cookie: '🍪', cake: '🍰', ice: '🍦', candy: '🍬',
-  nut: '🥜', nuts: '🥜', peanut: '🥜', beans: '🫘', lentils: '🫘',
-  basil: '🌿', parsley: '🌿', spinach: '🥬', kale: '🥬', mushroom: '🍄', mushrooms: '🍄',
-  coconut: '🥥', pineapple: '🍍', strawberry: '🍓', grapes: '🍇', watermelon: '🍉', peach: '🍑', pear: '🍐',
-  corn: '🌽', peas: '🫛', pepper: '🫑', chili: '🌶️', peppers: '🫑', ginger: '🫚',
-  croissant: '🥐', bagel: '🥯', pancake: '🥞', waffle: '🧇', toast: '🍞',
-  bacon: '🥓', sausage: '🌭', ham: '🥓', turkey: '🦃', duck: '🦆',
-  cola: '🥤', soda: '🥤', beer: '🍺', wine: '🍷', champagne: '🍾',
-  soap: '🧼', detergent: '🧴', sponge: '🧽', paper: '🧻', tissue: '🧻',
-  almond: '🥜', almonds: '🥜', walnut: '🥜', walnuts: '🥜', cashew: '🥜', hazelnut: '🥜',
-  blueberry: '🫐', blueberries: '🫐', raspberry: '🍓', raspberries: '🍓', blackberry: '🫐', cherry: '🍒', cherries: '🍒',
-  mango: '🥭', mangoes: '🥭', kiwi: '🥝', kiwis: '🥝', lime: '🍋', limes: '🍋', grapefruit: '🍊', plum: '🍑', plums: '🍑',
-  cabbage: '🥬', cauliflower: '🥦', zucchini: '🥒', eggplant: '🍆', pumpkin: '🎃', squash: '🎃', beet: '🫒', beets: '🫒',
-  celery: '🥬', asparagus: '🌿', greenbean: '🫛', greenbeans: '🫛', radish: '🥕', radishes: '🥕', leek: '🧅', leeks: '🧅',
-  mince: '🥩', minced: '🥩', lamb: '🥩', steak: '🥩', seafood: '🦐', cod: '🐟', sardine: '🐟', prawn: '🦐', prawns: '🦐',
-  tofu: '🧈', tempeh: '🥩', hummus: '🫓', falafel: '🫓', olives: '🫒',
-  baguette: '🥖', roll: '🥖', rolls: '🥖', loaf: '🍞', crackers: '🍘', crisps: '🥔', pretzel: '🥨',
-  oatmeal: '🥣', porridge: '🥣', granola: '🥣', muesli: '🥣', quinoa: '🍚', couscous: '🍚', bulgur: '🍚',
-  sauce: '🫙', ketchup: '🫙', mustard: '🫙', mayo: '🫙', mayonnaise: '🫙', salsa: '🫙', pesto: '🌿',
-  jam: '🍓', jelly: '🍓', marmalade: '🍊', spread: '🧈', nutella: '🍫', syrup: '🍯', maple: '🍯',
-  almondmilk: '🥛', oatmilk: '🥛', soymilk: '🥛',
-  espresso: '☕', cappuccino: '☕', latte: '☕', hotchocolate: '☕', cocoa: '☕',
-  smoothie: '🧃', lemonade: '🍋', icedtea: '🍵', mineral: '💧', sparkling: '💧',
-  cider: '🍎', lager: '🍺', ale: '🍺', whisky: '🥃', whiskey: '🥃', rum: '🥃', vodka: '🥃',
-  icecream: '🍦', sorbet: '🍦', gelato: '🍦', dessert: '🍰', pie: '🥧', tart: '🥧', donut: '🍩', donuts: '🍩',
-  cornflakes: '🥣', popcorn: '🍿', snack: '🍿', trail: '🥜', bar: '🍫', energy: '🍫',
-  baby: '🍼', infant: '🍼', formula: '🍼', pet: '🐕', dog: '🐕', cat: '🐈', food: '🍽️',
-  laundry: '🧺', bleach: '🧴', fabric: '🧺', dishwasher: '🍽️', tablet: '💊',
-  toothpaste: '🪥', toothbrush: '🪥', shampoo: '🧴', conditioner: '🧴', deodorant: '🧴', lotion: '🧴',
-  vitamin: '💊', vitamins: '💊', supplement: '💊', medicine: '💊', pill: '💊',
+  // Dairy
+  milk: '🥛', skimmed: '🥛', semi: '🥛', almondmilk: '🥛', oatmilk: '🥛', soymilk: '🥛',
+  yogurt: '🥛', yoghurt: '🥛', kefir: '🥛', cream: '🥛', whipping: '🥛',
+  custard: '🍮', pudding: '🍮', flan: '🍮',
+  cheese: '🧀', cheddar: '🧀', mozzarella: '🧀', parmesan: '🧀', gouda: '🧀', brie: '🧀', feta: '🧀', ricotta: '🧀', cottage: '🧀', gorgonzola: '🧀', gruyere: '🧀', emmental: '🧀',
+  butter: '🧈', margarine: '🧈', ghee: '🧈', lard: '🧈',
+  egg: '🥚', eggs: '🥚', quail: '🥚',
+  // Meat
+  chicken: '🍗', poultry: '🍗',
+  turkey: '🦃', duck: '🦆',
+  meat: '🥩', beef: '🥩', pork: '🥩', lamb: '🥩', veal: '🥩', venison: '🥩', mince: '🥩', minced: '🥩', steak: '🥩', meatball: '🥩', tempeh: '🥩',
+  bacon: '🥓', ham: '🥓', prosciutto: '🥓', pancetta: '🥓', salami: '🥓',
+  sausage: '🌭', chorizo: '🌶️',
+  rib: '🍖', ribs: '🍖',
+  bone: '🦴', broth: '🦴', stock: '🦴',
+  // Seafood
+  fish: '🐟', salmon: '🐟', tuna: '🐟', cod: '🐟', sardine: '🐟', halibut: '🐟', tilapia: '🐟', anchovy: '🐟', herring: '🐟', mackerel: '🐟', trout: '🐟',
+  shrimp: '🦐', prawn: '🦐', prawns: '🦐', seafood: '🦐',
+  lobster: '🦞',
+  crab: '🦀',
+  squid: '🦑', octopus: '🦑', calamari: '🦑',
+  oyster: '🦪', oysters: '🦪', mussel: '🦪', mussels: '🦪', clam: '🦪', scallop: '🦪',
+  // Fruits
+  apple: '🍎', apples: '🍎', gala: '🍎',
+  orange: '🍊', oranges: '🍊', clementine: '🍊', mandarin: '🍊', tangerine: '🍊', grapefruit: '🍊',
+  lemon: '🍋', lemons: '🍋', lime: '🍋', limes: '🍋',
+  banana: '🍌', bananas: '🍌', plantain: '🍌',
+  watermelon: '🍉',
+  grape: '🍇', grapes: '🍇', raisin: '🍇', raisins: '🍇', sultana: '🍇', sultanas: '🍇',
+  strawberry: '🍓', strawberries: '🍓', raspberry: '🍓', raspberries: '🍓',
+  blueberry: '🫐', blueberries: '🫐', blackberry: '🫐', blackberries: '🫐', bilberry: '🫐',
+  melon: '🍈', honeydew: '🍈', cantaloupe: '🍈',
+  peach: '🍑', nectarine: '🍑', apricot: '🍑', plum: '🍑', plums: '🍑', prune: '🍑',
+  cherry: '🍒', cherries: '🍒',
+  pear: '🍐', pears: '🍐',
+  mango: '🥭', mangoes: '🥭', papaya: '🥭', guava: '🥭',
+  pineapple: '🍍',
+  coconut: '🥥',
+  kiwi: '🥝', kiwis: '🥝',
+  tomato: '🍅', tomatoes: '🍅',
+  fig: '🍑', figs: '🍑', date: '🍑', dates: '🍑',
+  pomegranate: '🍓', cranberry: '🍓', cranberries: '🍓',
+  lychee: '🍒', dragonfruit: '🍓', passionfruit: '🥝',
+  // Vegetables
+  carrot: '🥕', carrots: '🥕', radish: '🥕', radishes: '🥕', parsnip: '🥕',
+  potato: '🥔', potatoes: '🥔', crisps: '🥔', chips: '🥔',
+  sweetpotato: '🍠', yam: '🍠',
+  eggplant: '🍆', aubergine: '🍆', aubergines: '🍆',
+  avocado: '🥑', avocados: '🥑',
+  broccoli: '🥦', cauliflower: '🥦',
+  lettuce: '🥬', spinach: '🥬', kale: '🥬', arugula: '🥬', rocket: '🥬', cabbage: '🥬', bokchoy: '🥬', chard: '🥬', celery: '🥬', endive: '🥬', chicory: '🥬', watercress: '🥬',
+  salad: '🥗',
+  cucumber: '🥒', courgette: '🥒', zucchini: '🥒',
+  pepper: '🫑', peppers: '🫑', capsicum: '🫑', bellpepper: '🫑',
+  chili: '🌶️', chilli: '🌶️', jalapeno: '🌶️', cayenne: '🌶️', habanero: '🌶️', paprika: '🌶️', sriracha: '🌶️', harissa: '🌶️', curry: '🌶️',
+  corn: '🌽', maize: '🌽', sweetcorn: '🌽',
+  onion: '🧅', onions: '🧅', shallot: '🧅', shallots: '🧅', leek: '🧅', leeks: '🧅', chives: '🧅', scallion: '🧅', springonion: '🧅',
+  garlic: '🧄',
+  peas: '🫛', pea: '🫛', greenbean: '🫛', greenbeans: '🫛', edamame: '🫛', snowpea: '🫛', mangetout: '🫛',
+  mushroom: '🍄', mushrooms: '🍄', truffle: '🍄',
+  pumpkin: '🎃', squash: '🎃',
+  artichoke: '🌿', asparagus: '🌿', fennel: '🌿',
+  beet: '🟣', beetroot: '🟣', beets: '🟣', turnip: '🟣', kohlrabi: '🟣', rutabaga: '🟣',
+  // Legumes & Nuts
+  bean: '🫘', beans: '🫘', lentil: '🫘', lentils: '🫘', chickpea: '🫘', chickpeas: '🫘', kidney: '🫘',
+  nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', almond: '🥜', almonds: '🥜', walnut: '🥜', walnuts: '🥜', cashew: '🥜', cashews: '🥜', hazelnut: '🥜', hazelnuts: '🥜', pistachio: '🥜', pistachios: '🥜', pecan: '🥜', pecans: '🥜', macadamia: '🥜',
+  chestnut: '🌰', chestnuts: '🌰',
+  sesame: '🌿', flaxseed: '🌿', chia: '🌿',
+  tofu: '🧈', hummus: '🫙',
+  // Herbs & Spices
+  herb: '🌿', herbs: '🌿', mint: '🌿', dill: '🌿', oregano: '🌿', thyme: '🌿', rosemary: '🌿', cilantro: '🌿', coriander: '🌿', basil: '🌿', parsley: '🌿', tarragon: '🌿', sage: '🌿', chervil: '🌿',
+  ginger: '🫚', turmeric: '🫚', saffron: '🫚',
+  spice: '🧂', spices: '🧂', salt: '🧂', sugar: '🧂', cinnamon: '🧂', cumin: '🧂', nutmeg: '🧂', cardamom: '🧂', clove: '🧂', caraway: '🧂',
+  oil: '🫚', oliveoil: '🫒', olives: '🫒', olive: '🫒',
+  vinegar: '🫙', balsamic: '🫙',
+  // Grains & Bakery
+  flour: '🌾', wheat: '🌾', grain: '🌾', oats: '🥣', oatmeal: '🥣', porridge: '🥣', granola: '🥣', muesli: '🥣', cornflakes: '🥣', cereal: '🥣',
+  rice: '🍚', risotto: '🍚', quinoa: '🍚', couscous: '🍚', bulgur: '🍚', barley: '🍚', millet: '🍚', polenta: '🍚', semolina: '🍚', buckwheat: '🍚',
+  pasta: '🍝', spaghetti: '🍝', penne: '🍝', fusilli: '🍝', tagliatelle: '🍝', linguine: '🍝', rigatoni: '🍝', lasagna: '🍝', gnocchi: '🍝',
+  noodle: '🍜', noodles: '🍜', ramen: '🍜', udon: '🍜', soba: '🍜',
+  bread: '🍞', toast: '🍞', loaf: '🍞', sourdough: '🍞', rye: '🍞',
+  croissant: '🥐',
+  baguette: '🥖', roll: '🥖', rolls: '🥖',
+  flatbread: '🫓', pita: '🫓', naan: '🫓', tortilla: '🫓', chapati: '🫓', lavash: '🫓', wrap: '🫓',
+  pretzel: '🥨',
+  bagel: '🥯',
+  pancake: '🥞', crepe: '🥞', waffle: '🧇',
+  cracker: '🍘', crackers: '🍘',
+  // Condiments
+  sauce: '🫙', ketchup: '🫙', mustard: '🫙', mayo: '🫙', mayonnaise: '🫙', salsa: '🫙', pesto: '🌿', tahini: '🫙', soysauce: '🫙', fishsauce: '🫙', teriyaki: '🫙', worcestershire: '🫙',
+  jam: '🍓', jelly: '🍓', marmalade: '🍊', chutney: '🫙',
+  honey: '🍯', syrup: '🍯', maple: '🍯',
+  spread: '🧈', nutella: '🍫',
+  // Canned & Preserved
+  canned: '🥫', can: '🥫', tin: '🥫', tinned: '🥫', jar: '🫙', bottle: '🍾',
+  // Prepared & Frozen
+  soup: '🍲', stew: '🥘', casserole: '🥘', pie: '🥧',
+  pizza: '🍕', burger: '🍔', fries: '🍟', sandwich: '🥪', burrito: '🌯', taco: '🌮', gyro: '🥙', falafel: '🧆', sushi: '🍣',
+  frozen: '❄️',
+  // Baking
+  yeast: '🌾', bakingpowder: '🌾', bakingsoda: '🌾', cornstarch: '🌾', vanilla: '🌿', cocoa: '☕',
+  // Sweets & Snacks
+  chocolate: '🍫', candy: '🍬', lollipop: '🍭', popcorn: '🍿', snack: '🍿', bar: '🍫', energy: '🍫',
+  cookie: '🍪', cookies: '🍪', biscuit: '🍪', biscuits: '🍪',
+  cake: '🎂', cupcake: '🧁', muffin: '🧁', brownie: '🍫', donut: '🍩', donuts: '🍩',
+  tart: '🥧',
+  icecream: '🍦', sorbet: '🍦', gelato: '🍦', dessert: '🍮',
+  // Drinks
+  water: '💧', mineral: '💧', sparkling: '💧',
+  juice: '🧃', lemonade: '🧃', squash: '🧃',
+  smoothie: '🥤', soda: '🥤', cola: '🥤',
+  coffee: '☕', espresso: '☕', cappuccino: '☕', latte: '☕', americano: '☕',
+  tea: '🍵', greentea: '🍵', herbal: '🍵', chamomile: '🍵', peppermint: '🍵',
+  bubbletea: '🧋', boba: '🧋', tapioca: '🧋',
+  wine: '🍷', redwine: '🍷', whitewine: '🍷',
+  beer: '🍺', lager: '🍺', ale: '🍺', cider: '🍺',
+  champagne: '🍾', prosecco: '🍾',
+  cocktail: '🍸', martini: '🍸', mojito: '🍹',
+  whisky: '🥃', whiskey: '🥃', rum: '🥃', vodka: '🥃', gin: '🥃', brandy: '🥃', liqueur: '🥃',
+  sake: '🍶',
+  // Household & Cleaning
+  soap: '🧼', handwash: '🧼',
+  detergent: '🧴', shampoo: '🧴', conditioner: '🧴', deodorant: '🧴', lotion: '🧴', moisturizer: '🧴', bodyWash: '🧴', showergel: '🧴',
+  sponge: '🧽', scrub: '🧽',
+  paper: '🧻', tissue: '🧻', toilet: '🧻',
+  laundry: '🧺', fabric: '🧺',
+  bleach: '🫧', dishwashing: '🫧', dishwasher: '🫧',
+  broom: '🧹', mop: '🧹',
+  bucket: '🪣',
+  plunger: '🪠',
+  foil: '📜', cling: '📜',
+  freezer: '❄️',
+  // Personal Care
+  toothpaste: '🪥', toothbrush: '🪥', floss: '🪥',
+  razor: '🪒', razors: '🪒', shaving: '🪒',
+  // Health
+  vitamin: '💊', vitamins: '💊', supplement: '💊', medicine: '💊', pill: '💊', tablet: '💊', painkiller: '💊', ibuprofen: '💊',
+  bandage: '🩹', plaster: '🩹',
+  // Baby & Pet
+  baby: '🍼', infant: '🍼', formula: '🍼',
+  pet: '🐕', dog: '🐕', cat: '🐈',
+  // Other
   battery: '🔋', batteries: '🔋', bulb: '💡', lightbulb: '💡',
-  bag: '🛍️', bags: '🛍️', foil: '📜', wrap: '📜', cling: '📜', freezer: '❄️',
-  herb: '🌿', herbs: '🌿', mint: '🌿', dill: '🌿', oregano: '🌿', thyme: '🌿', rosemary: '🌿', cilantro: '🌿', coriander: '🌿',
-  spice: '🧂', spices: '🧂', cinnamon: '🧂', paprika: '🌶️', cumin: '🧂', turmeric: '🫚', curry: '🌶️', nutmeg: '🧂',
-  canned: '🥫', can: '🥫', tin: '🥫', jar: '🫙', bottle: '🍾',
-  frozen: '❄️', fresh: '🥬', organic: '🌱', vegan: '🌱', veggie: '🥬',
-  breakfast: '🍳', lunch: '🥪', dinner: '🍽️'
+  bag: '🛍️', bags: '🛍️',
+  organic: '🌱', vegan: '🌱', fresh: '🌱',
+  breakfast: '🍳', lunch: '🥪', dinner: '🍽️', food: '🍽️',
 };
 
 function suggestIconFromName(name) {
@@ -630,14 +897,157 @@ function itemDisplayIcon(libItem) {
   return libItem.category?.icon || '📦';
 }
 
-const EMOJI_PICKER_LIST = (() => {
-  const emojiToKeywords = {};
-  Object.entries(NAME_TO_EMOJI).forEach(([kw, em]) => {
-    if (!emojiToKeywords[em]) emojiToKeywords[em] = [];
-    emojiToKeywords[em].push(kw);
-  });
-  return Object.entries(emojiToKeywords).map(([emoji, keywords]) => ({ emoji, keywords }));
-})();
+const EMOJI_PICKER_LIST = [
+  // Fruits
+  { emoji: '🍎', keywords: ['apple', 'apples', 'fruit'] },
+  { emoji: '🍊', keywords: ['orange', 'tangerine', 'mandarin', 'clementine', 'grapefruit'] },
+  { emoji: '🍋', keywords: ['lemon', 'lime', 'citrus'] },
+  { emoji: '🍌', keywords: ['banana', 'plantain'] },
+  { emoji: '🍉', keywords: ['watermelon', 'melon'] },
+  { emoji: '🍇', keywords: ['grape', 'grapes', 'raisin', 'sultana', 'currant'] },
+  { emoji: '🍓', keywords: ['strawberry', 'raspberry', 'jam', 'jelly', 'berry'] },
+  { emoji: '🫐', keywords: ['blueberry', 'blackberry', 'bilberry', 'berry'] },
+  { emoji: '🍈', keywords: ['melon', 'honeydew', 'cantaloupe'] },
+  { emoji: '🍑', keywords: ['peach', 'nectarine', 'apricot', 'plum', 'prune', 'fig', 'date'] },
+  { emoji: '🍒', keywords: ['cherry', 'cherries', 'lychee'] },
+  { emoji: '🍐', keywords: ['pear'] },
+  { emoji: '🥭', keywords: ['mango', 'papaya', 'guava', 'tropical'] },
+  { emoji: '🍍', keywords: ['pineapple'] },
+  { emoji: '🥥', keywords: ['coconut', 'coconut milk'] },
+  { emoji: '🥝', keywords: ['kiwi', 'passionfruit'] },
+  { emoji: '🍅', keywords: ['tomato', 'cherry tomato'] },
+  { emoji: '🫒', keywords: ['olive', 'olives', 'olive oil'] },
+  // Vegetables
+  { emoji: '🥕', keywords: ['carrot', 'parsnip', 'radish'] },
+  { emoji: '🥔', keywords: ['potato', 'crisps', 'chips'] },
+  { emoji: '🍠', keywords: ['sweet potato', 'yam'] },
+  { emoji: '🍆', keywords: ['eggplant', 'aubergine'] },
+  { emoji: '🥑', keywords: ['avocado'] },
+  { emoji: '🥦', keywords: ['broccoli', 'cauliflower'] },
+  { emoji: '🥬', keywords: ['lettuce', 'spinach', 'kale', 'cabbage', 'bok choy', 'arugula', 'chard', 'celery', 'endive'] },
+  { emoji: '🥒', keywords: ['cucumber', 'courgette', 'zucchini'] },
+  { emoji: '🌽', keywords: ['corn', 'sweetcorn', 'maize'] },
+  { emoji: '🌶️', keywords: ['chili', 'chilli', 'cayenne', 'habanero', 'paprika', 'hot pepper', 'sriracha', 'harissa', 'chorizo'] },
+  { emoji: '🫑', keywords: ['pepper', 'bell pepper', 'capsicum', 'green pepper'] },
+  { emoji: '🧅', keywords: ['onion', 'shallot', 'leek', 'spring onion', 'chives', 'scallion'] },
+  { emoji: '🧄', keywords: ['garlic'] },
+  { emoji: '🫛', keywords: ['peas', 'green bean', 'edamame', 'snow pea', 'mangetout'] },
+  { emoji: '🍄', keywords: ['mushroom', 'truffle', 'fungi'] },
+  { emoji: '🎃', keywords: ['pumpkin', 'squash'] },
+  { emoji: '🟣', keywords: ['beet', 'beetroot', 'turnip', 'kohlrabi', 'purple'] },
+  // Legumes & Nuts
+  { emoji: '🫘', keywords: ['bean', 'lentil', 'chickpea', 'kidney bean', 'legume', 'pulse'] },
+  { emoji: '🥜', keywords: ['peanut', 'almond', 'walnut', 'cashew', 'hazelnut', 'pistachio', 'pecan', 'nut', 'nuts'] },
+  { emoji: '🌰', keywords: ['chestnut'] },
+  // Herbs & Spices
+  { emoji: '🌿', keywords: ['herb', 'basil', 'parsley', 'mint', 'rosemary', 'thyme', 'dill', 'oregano', 'coriander', 'cilantro', 'sage', 'tarragon', 'asparagus', 'artichoke', 'fennel', 'chervil', 'pesto', 'sesame', 'chia'] },
+  { emoji: '🧂', keywords: ['salt', 'sugar', 'spice', 'seasoning', 'cinnamon', 'cumin', 'nutmeg', 'cardamom', 'clove', 'caraway'] },
+  { emoji: '🫚', keywords: ['oil', 'sunflower oil', 'vegetable oil', 'ginger', 'turmeric', 'saffron'] },
+  // Dairy & Eggs
+  { emoji: '🥛', keywords: ['milk', 'oat milk', 'almond milk', 'soy milk', 'yogurt', 'cream', 'kefir', 'dairy'] },
+  { emoji: '🧀', keywords: ['cheese', 'cheddar', 'mozzarella', 'parmesan', 'brie', 'feta', 'gouda', 'ricotta', 'gorgonzola'] },
+  { emoji: '🧈', keywords: ['butter', 'margarine', 'ghee', 'spread', 'lard', 'tofu'] },
+  { emoji: '🥚', keywords: ['egg', 'eggs'] },
+  { emoji: '🍳', keywords: ['breakfast', 'fried egg', 'frying'] },
+  { emoji: '🍮', keywords: ['custard', 'pudding', 'flan', 'cream dessert', 'creme'] },
+  // Grains & Bakery
+  { emoji: '🌾', keywords: ['flour', 'wheat', 'grain', 'yeast', 'baking powder', 'baking soda', 'cornstarch'] },
+  { emoji: '🥣', keywords: ['cereal', 'oats', 'granola', 'muesli', 'porridge', 'oatmeal', 'cornflakes'] },
+  { emoji: '🍚', keywords: ['rice', 'quinoa', 'couscous', 'barley', 'millet', 'polenta', 'bulgur', 'buckwheat', 'risotto'] },
+  { emoji: '🍝', keywords: ['pasta', 'spaghetti', 'penne', 'lasagna', 'fusilli', 'tagliatelle', 'rigatoni', 'gnocchi'] },
+  { emoji: '🍜', keywords: ['noodles', 'ramen', 'udon', 'soba', 'instant noodles'] },
+  { emoji: '🍞', keywords: ['bread', 'toast', 'loaf', 'sourdough', 'rye bread'] },
+  { emoji: '🥐', keywords: ['croissant', 'pastry'] },
+  { emoji: '🥖', keywords: ['baguette', 'bread roll', 'roll'] },
+  { emoji: '🫓', keywords: ['flatbread', 'pita', 'naan', 'tortilla', 'chapati', 'wrap', 'lavash'] },
+  { emoji: '🥨', keywords: ['pretzel'] },
+  { emoji: '🥯', keywords: ['bagel'] },
+  { emoji: '🥞', keywords: ['pancake', 'crepe'] },
+  { emoji: '🧇', keywords: ['waffle'] },
+  { emoji: '🍘', keywords: ['cracker', 'rice cracker'] },
+  // Condiments & Pantry
+  { emoji: '🫙', keywords: ['sauce', 'ketchup', 'mustard', 'mayo', 'vinegar', 'jar', 'pickles', 'soy sauce', 'tahini', 'hummus', 'chutney', 'salsa'] },
+  { emoji: '🥫', keywords: ['canned', 'tin', 'tinned', 'can', 'preserved'] },
+  { emoji: '🍯', keywords: ['honey', 'syrup', 'maple syrup', 'treacle'] },
+  // Prepared Food
+  { emoji: '🍕', keywords: ['pizza'] },
+  { emoji: '🍔', keywords: ['burger', 'hamburger'] },
+  { emoji: '🍟', keywords: ['fries', 'chips'] },
+  { emoji: '🌮', keywords: ['taco'] },
+  { emoji: '🌯', keywords: ['wrap', 'burrito'] },
+  { emoji: '🫔', keywords: ['tamale', 'flatbread roll'] },
+  { emoji: '🥙', keywords: ['gyro', 'pita wrap', 'kebab', 'souvlaki'] },
+  { emoji: '🧆', keywords: ['falafel'] },
+  { emoji: '🥗', keywords: ['salad', 'green salad'] },
+  { emoji: '🥘', keywords: ['stew', 'casserole', 'paella', 'one-pot', 'curry'] },
+  { emoji: '🫕', keywords: ['fondue', 'hotpot'] },
+  { emoji: '🍲', keywords: ['soup', 'broth', 'pot'] },
+  { emoji: '🍛', keywords: ['curry', 'indian'] },
+  { emoji: '🍣', keywords: ['sushi', 'sashimi'] },
+  { emoji: '🍤', keywords: ['fried shrimp', 'tempura'] },
+  { emoji: '🥪', keywords: ['sandwich', 'sub', 'lunch'] },
+  { emoji: '🌭', keywords: ['sausage', 'hot dog', 'frankfurter'] },
+  // Sweets
+  { emoji: '🍫', keywords: ['chocolate', 'cocoa', 'nutella', 'brownie', 'bar'] },
+  { emoji: '🍬', keywords: ['candy', 'sweets'] },
+  { emoji: '🍭', keywords: ['lollipop'] },
+  { emoji: '🍿', keywords: ['popcorn', 'snack'] },
+  { emoji: '🍪', keywords: ['cookie', 'biscuit', 'cookies'] },
+  { emoji: '🎂', keywords: ['birthday cake', 'cake'] },
+  { emoji: '🧁', keywords: ['cupcake', 'muffin'] },
+  { emoji: '🍩', keywords: ['donut', 'doughnut'] },
+  { emoji: '🥧', keywords: ['pie', 'tart'] },
+  { emoji: '🍦', keywords: ['ice cream', 'sorbet', 'gelato', 'ice lolly'] },
+  { emoji: '🍡', keywords: ['dango', 'sweet skewer'] },
+  { emoji: '🍧', keywords: ['shaved ice', 'kakigori'] },
+  // Drinks
+  { emoji: '💧', keywords: ['water', 'mineral water', 'sparkling water'] },
+  { emoji: '🧃', keywords: ['juice', 'lemonade', 'fruit juice', 'squash'] },
+  { emoji: '🥤', keywords: ['smoothie', 'soda', 'cola', 'soft drink', 'milkshake'] },
+  { emoji: '☕', keywords: ['coffee', 'espresso', 'cappuccino', 'latte', 'americano', 'cocoa', 'hot chocolate'] },
+  { emoji: '🍵', keywords: ['tea', 'green tea', 'herbal tea', 'chamomile', 'peppermint', 'earl grey'] },
+  { emoji: '🫖', keywords: ['teapot', 'tea kettle'] },
+  { emoji: '🧋', keywords: ['bubble tea', 'boba', 'milk tea', 'tapioca'] },
+  { emoji: '🍺', keywords: ['beer', 'lager', 'ale', 'cider'] },
+  { emoji: '🍷', keywords: ['wine', 'red wine', 'white wine', 'rose'] },
+  { emoji: '🍾', keywords: ['champagne', 'prosecco', 'sparkling wine', 'bottle'] },
+  { emoji: '🥂', keywords: ['sparkling', 'toast', 'glass'] },
+  { emoji: '🍸', keywords: ['cocktail', 'martini'] },
+  { emoji: '🍹', keywords: ['tropical drink', 'mojito', 'pina colada'] },
+  { emoji: '🥃', keywords: ['whisky', 'whiskey', 'rum', 'vodka', 'gin', 'spirits', 'brandy', 'liqueur'] },
+  { emoji: '🍶', keywords: ['sake'] },
+  { emoji: '🧉', keywords: ['mate', 'yerba mate'] },
+  { emoji: '🧊', keywords: ['ice', 'ice cube', 'frozen'] },
+  // Household & Cleaning
+  { emoji: '🧼', keywords: ['soap', 'hand wash', 'bar soap'] },
+  { emoji: '🧴', keywords: ['shampoo', 'conditioner', 'lotion', 'body wash', 'shower gel', 'detergent', 'deodorant', 'moisturizer'] },
+  { emoji: '🧽', keywords: ['sponge', 'scrub', 'cleaning pad'] },
+  { emoji: '🧻', keywords: ['toilet paper', 'tissue', 'paper towel', 'kitchen roll'] },
+  { emoji: '🧺', keywords: ['laundry', 'basket', 'fabric softener'] },
+  { emoji: '🧹', keywords: ['broom', 'brush', 'sweeping', 'mop'] },
+  { emoji: '🪣', keywords: ['bucket', 'mop bucket'] },
+  { emoji: '🫧', keywords: ['bubbles', 'dishwashing', 'washing up liquid', 'bleach'] },
+  { emoji: '🪠', keywords: ['plunger'] },
+  { emoji: '📜', keywords: ['foil', 'cling wrap', 'baking paper', 'parchment'] },
+  // Personal Care
+  { emoji: '🪥', keywords: ['toothbrush', 'toothpaste', 'dental', 'floss'] },
+  { emoji: '🪒', keywords: ['razor', 'shaving', 'shaving cream'] },
+  // Health
+  { emoji: '💊', keywords: ['medicine', 'pill', 'tablet', 'vitamin', 'supplement', 'painkiller', 'ibuprofen', 'aspirin'] },
+  { emoji: '🩹', keywords: ['plaster', 'bandage', 'band-aid'] },
+  // Baby & Pet
+  { emoji: '🍼', keywords: ['baby', 'infant', 'formula', 'baby food'] },
+  { emoji: '🐕', keywords: ['dog', 'dog food', 'pet', 'puppy'] },
+  { emoji: '🐈', keywords: ['cat', 'cat food', 'kitten'] },
+  // Other
+  { emoji: '🔋', keywords: ['battery', 'batteries'] },
+  { emoji: '💡', keywords: ['bulb', 'light bulb', 'lamp'] },
+  { emoji: '🛍️', keywords: ['bag', 'bags', 'shopping bag'] },
+  { emoji: '❄️', keywords: ['frozen', 'freezer', 'ice pack'] },
+  { emoji: '🌱', keywords: ['organic', 'vegan', 'fresh', 'plant-based', 'seedling'] },
+  { emoji: '🍽️', keywords: ['food', 'meal', 'dinner', 'plate', 'dishwasher'] },
+  { emoji: '📦', keywords: ['box', 'package', 'other'] },
+];
 function filterEmojiPickerList(q) {
   const lower = (q || '').toLowerCase().trim();
   if (!lower) return EMOJI_PICKER_LIST;
@@ -653,10 +1063,13 @@ async function api(path, opts = {}) {
   return r.json();
 }
 
-function toast(msg) {
-  const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg;
+function toast(msg, duration = 3000) {
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.textContent = msg;
+  d.style.animationDuration = duration + 'ms';
   document.getElementById('toast-container').appendChild(d);
-  setTimeout(() => d.remove(), 3100);
+  setTimeout(() => d.remove(), duration + 100);
 }
 
 let _audioCtx = null;
@@ -945,17 +1358,20 @@ async function loadLibrary() {
   if (q) url += `q=${encodeURIComponent(q)}&`;
   if (cat) url += `category_id=${cat}&`;
   allLibrary = await api(url);
-  document.getElementById('lib-body').innerHTML = allLibrary.map(i => `<tr>
-    <td class="item-icon">${itemDisplayIcon(i)}</td>
-    <td>${i.name}</td><td>${i.category?.icon || ''} ${i.category?.name || ''}</td>
-    <td>${i.default_quantity}</td><td>${i.unit}</td>
-    <td>${i.image_url ? `<img src="${i.image_url}" class="item-thumb" alt="">` : ''}</td>
-    <td>${i.notes || ''}</td>
-    <td>${i.created_by?.name || '—'}</td>
-    <td>${i.translations?.da || ''}</td><td>${i.translations?.it || ''}</td><td>${i.translations?.bg || ''}</td>
-    <td><button class="btn-sm" onclick='editItem(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✎</button>
-    <button class="btn-sm btn-danger" onclick="delItem(${i.id})">✕</button></td>
-  </tr>`).join('');
+  document.getElementById('lib-body').innerHTML = allLibrary.map(i => `<div class="lib-card">
+    ${i.image_url ? `<img src="${i.image_url}" class="item-thumb" alt="">` : ''}
+    <div class="lib-card-top">
+      <span class="lib-card-icon">${itemDisplayIcon(i)}</span>
+      <span class="lib-card-name">${escapeHtml(i.name)}</span>
+    </div>
+    <div class="lib-card-cat">${i.category?.icon || ''} ${escapeHtml(i.category?.name || 'No category')}</div>
+    <div class="lib-card-qty">${i.default_quantity} ${i.unit}</div>
+    ${i.notes ? `<div class="lib-card-notes">${escapeHtml(i.notes)}</div>` : ''}
+    <div class="lib-card-actions">
+      <button class="btn-sm" onclick='editItem(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✎ Edit</button>
+      <button class="btn-sm btn-danger" onclick="delItem(${i.id})">✕</button>
+    </div>
+  </div>`).join('');
   updateSuggestions();
   if (document.getElementById('add-items-overlay')?.style.display === 'flex') {
     const searchEl = document.getElementById('add-overlay-search');
@@ -965,7 +1381,7 @@ async function loadLibrary() {
 
 let pendingImageFile = null;
 
-function showItemModal(item = null) {
+function showItemModal(item = null, prefillName = '') {
   pendingImageFile = null;
   const hasImg = item?.image_url;
   modal(item ? 'Edit Item' : 'New Item', `
@@ -976,7 +1392,7 @@ function showItemModal(item = null) {
         <input type="hidden" id="m-icon" value="${item?.icon || ''}">
         <button type="button" class="btn-sm" id="m-pick-icon-btn">Pick icon…</button>
       </div>
-      <div><label>Name</label><input id="m-name" value="${item?.name || ''}" placeholder="Item name"></div>
+      <div><label>Name</label><input id="m-name" value="${item?.name || prefillName}" placeholder="Item name"></div>
     </div>
     <div id="emoji-picker-panel" class="emoji-picker-panel" style="display:none">
       <input type="text" id="emoji-picker-search" placeholder="Type a word (e.g. milk, fruit)…" class="emoji-picker-search" autocomplete="off">
@@ -1012,6 +1428,16 @@ function showItemModal(item = null) {
         const fd = new FormData();
         fd.append('file', pendingImageFile);
         await fetch('/api/library/' + itemId + '/image', {method: 'POST', credentials: 'include', body: fd});
+      }
+      // If opened from the add overlay for a new item, also add it to the current list
+      if (!item && itemId && addOverlayListId) {
+        await api(`/lists/${addOverlayListId}/items`, {method: 'POST', body: JSON.stringify({library_item_id: itemId})});
+        allLibrary = await api('/library');
+        closeModal();
+        toast('Item created and added to list');
+        playAddSound();
+        closeAddItemsOverlay();
+        return;
       }
       closeModal(); toast('Saved'); loadLibrary();
     } catch (e) {
@@ -1100,8 +1526,8 @@ async function loadLists() {
   const lists = await api('/lists');
   const sel = document.getElementById('list-select');
   sel.innerHTML = '<option value="">Select list…</option>' +
-    lists.map(l => `<option value="${l.id}">${l.name}</option>`).join('') +
-    '<option value="__new__">Create new list</option>';
+    lists.map(l => `<option value="${l.id}">${l.icon ? l.icon + ' ' : ''}${l.name}</option>`).join('') +
+    '<option value="__new__">＋ New list</option>';
   const grocery = lists.find(l => l.name === 'Grocery');
   if (grocery) {
     sel.value = String(grocery.id);
@@ -1109,19 +1535,23 @@ async function loadLists() {
   }
   allSupermarkets = await api('/supermarkets');
   const ss = document.getElementById('supermarket-select');
-  ss.innerHTML = '<option value="">Default order</option>' +
+  ss.innerHTML = '<option value="">Default</option>' +
     allSupermarkets.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   sel.onchange = async () => {
     if (sel.value === '__new__') {
-      const name = prompt('List name:');
+      const raw = prompt('List name (optionally start with an emoji, e.g. 🏠 Home):');
       const firstId = lists.length ? String(lists[0].id) : '';
-      if (!name || !name.trim()) {
+      if (!raw || !raw.trim()) {
         sel.value = firstId;
         if (firstId) loadShoppingList();
         return;
       }
+      const emojiMatch = raw.trim().match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
+      const icon = emojiMatch ? emojiMatch[1] : '🛒';
+      const name = emojiMatch ? raw.trim().slice(emojiMatch[0].length).trim() : raw.trim();
+      if (!name) { sel.value = firstId; if (firstId) loadShoppingList(); return; }
       try {
-        const created = await api('/lists', { method: 'POST', body: JSON.stringify({ name: name.trim() }) });
+        const created = await api('/lists', { method: 'POST', body: JSON.stringify({ name, icon }) });
         toast('Created');
         await loadLists();
         sel.value = String(created.id);
@@ -1147,6 +1577,8 @@ function updateSuggestions() {
 // ── Add-items overlay (mobile-first) ──
 let addOverlayListId = null;
 let addOverlayAddedIds = new Set();
+let replaceMode = null;
+let replaceAnimLibId = null;
 
 function openAddItemsOverlay() {
   const listId = document.getElementById('list-select').value;
@@ -1158,6 +1590,9 @@ function openAddItemsOverlay() {
     addOverlayAddedIds = new Set(list.items.map(i => i.library_item_id));
     const overlay = document.getElementById('add-items-overlay');
     overlay.style.display = 'flex';
+    overlay.classList.remove('opening');
+    void overlay.offsetWidth;
+    overlay.classList.add('opening');
     overlay.removeAttribute('aria-hidden');
     overlay.setAttribute('aria-modal', 'true');
     document.body.style.overflow = 'hidden';
@@ -1167,13 +1602,42 @@ function openAddItemsOverlay() {
   })();
 }
 
-function closeAddItemsOverlay() {
+function openReplaceOverlay(listId, itemId, itemName) {
+  replaceMode = { listId, itemId, itemName };
+  addOverlayListId = listId;
+  (async () => {
+    if (allLibrary.length === 0) allLibrary = await api('/library');
+    const list = await api(`/lists/${listId}`);
+    addOverlayAddedIds = new Set(list.items.map(i => i.library_item_id));
+    const overlay = document.getElementById('add-items-overlay');
+    overlay.style.display = 'flex';
+    overlay.classList.remove('opening');
+    void overlay.offsetWidth;
+    overlay.classList.add('opening');
+    overlay.removeAttribute('aria-hidden');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('add-overlay-title').textContent = 'Replace item';
+    const banner = document.getElementById('replace-banner');
+    banner.style.display = 'block';
+    document.getElementById('replace-banner-name').textContent = itemName;
+    document.getElementById('add-overlay-new-item').style.display = 'none';
+    renderAddItemsList('');
+    document.getElementById('add-overlay-search').value = '';
+    document.getElementById('add-overlay-search').focus();
+  })();
+}
+
+function closeAddItemsOverlay(skipReload = false) {
   const overlay = document.getElementById('add-items-overlay');
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   addOverlayListId = null;
-  loadShoppingList();
+  replaceMode = null;
+  document.getElementById('add-overlay-title').textContent = 'Add items';
+  document.getElementById('replace-banner').style.display = 'none';
+  document.getElementById('add-overlay-new-item').style.display = '';
+  if (!skipReload) loadShoppingList();
 }
 
 function renderAddItemsList(searchStr) {
@@ -1204,14 +1668,25 @@ function renderAddItemsList(searchStr) {
     const cat = `${i.category?.icon || ''} ${i.category?.name || 'Other'}`.trim();
     if (added) {
       return `<div class="add-overlay-item added">
-        <span class="item-icon">${itemDisplayIcon(i)}</span>
-        <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)}</span></div>
-        <span class="item-action"><span class="badge-added">Added</span></span></div>`;
+        <div class="add-overlay-item-main">
+          <div class="add-overlay-item-top"><span class="item-icon">${itemDisplayIcon(i)}</span><span class="item-name">${escapeHtml(i.name)}</span></div>
+          <span class="item-meta">${escapeHtml(cat)}</span>
+        </div>
+        <span class="item-action"><span class="badge-added">✓</span></span>
+      </div>`;
+    }
+    if (replaceMode) {
+      return `<div class="add-overlay-item">
+        <div class="add-overlay-item-main">
+          <div class="add-overlay-item-top"><span class="item-icon">${itemDisplayIcon(i)}</span><span class="item-name">${escapeHtml(i.name)}</span></div>
+          <span class="item-meta">${escapeHtml(cat)}</span>
+        </div>
+        <span class="item-action"><button type="button" class="btn-add-circle-sm btn-replace-select" data-library-id="${i.id}" aria-label="Use">→</button></span>
+      </div>`;
     }
     return `<div class="add-overlay-item">
-      <span class="item-icon">${itemDisplayIcon(i)}</span>
-      <div class="item-info"><span class="item-name">${escapeHtml(i.name)}</span><span class="item-meta">${escapeHtml(cat)}</span></div>
-      <span class="item-action">
+      <div class="add-overlay-item-main">
+        <div class="add-overlay-item-top"><span class="item-icon">${itemDisplayIcon(i)}</span><span class="item-name">${escapeHtml(i.name)}</span></div>
         <div class="add-overlay-qty">
           <div class="add-qty-wrap">
             <button type="button" class="add-qty-minus" data-lib-id="${i.id}" aria-label="Decrease">−</button>
@@ -1221,9 +1696,13 @@ function renderAddItemsList(searchStr) {
           <select class="add-unit" data-lib-id="${i.id}">
             ${UNITS.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('')}
           </select>
-          <button type="button" class="btn-add" data-library-id="${i.id}" data-name="${escapeHtml(i.name).replace(/"/g, '&quot;')}">Add</button>
         </div>
-      </span></div>`;
+        <span class="item-meta">${escapeHtml(cat)}</span>
+      </div>
+      <span class="item-action">
+        <button type="button" class="btn-add-circle-sm" data-library-id="${i.id}" aria-label="Add ${escapeHtml(i.name)}">+</button>
+      </span>
+    </div>`;
   }).join('');
   function applyQtyStep(row, delta) {
     const qtyInput = row?.querySelector('.add-qty');
@@ -1247,7 +1726,7 @@ function renderAddItemsList(searchStr) {
       applyQtyStep(this.closest('.add-overlay-item'), 1);
     });
   });
-  listEl.querySelectorAll('.btn-add[data-library-id]').forEach(btn => {
+  listEl.querySelectorAll('.btn-add-circle-sm[data-library-id]:not(.btn-replace-select)').forEach(btn => {
     btn.addEventListener('click', function() {
       const libId = parseInt(this.getAttribute('data-library-id'), 10);
       const row = this.closest('.add-overlay-item');
@@ -1256,6 +1735,32 @@ function renderAddItemsList(searchStr) {
       const qty = qtyInput ? parseFloat(qtyInput.value) || undefined : undefined;
       const unit = unitSelect ? unitSelect.value : undefined;
       addItemFromOverlay(libId, qty, unit);
+    });
+  });
+  listEl.querySelectorAll('.btn-replace-select').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      if (!replaceMode) return;
+      const libId = parseInt(this.getAttribute('data-library-id'), 10);
+      const { listId, itemId, itemName } = replaceMode;
+      const newName = allLibrary.find(i => i.id === libId)?.name || '?';
+      const oldRow = document.querySelector(`.list-item[data-item-id="${itemId}"]`)?.closest('.swipe-row');
+
+      // Close overlay first, then start card animation after it's gone
+      closeAddItemsOverlay(true);
+      await new Promise(r => setTimeout(r, 80));
+      if (oldRow) oldRow.classList.add('replace-out');
+
+      try {
+        await api(`/lists/${listId}/items/${itemId}`, { method: 'DELETE' });
+        await api(`/lists/${listId}/items`, { method: 'POST', body: JSON.stringify({ library_item_id: libId }) });
+        toast(`${itemName} replaced by ${newName}`, 5000);
+        playAddSound();
+        replaceAnimLibId = libId;
+        loadShoppingList();
+      } catch(e) {
+        if (oldRow) oldRow.classList.remove('replace-out');
+        toast(e.message);
+      }
     });
   });
 }
@@ -1302,18 +1807,10 @@ async function addItemFromOverlay(libraryItemId, quantity, unit) {
 }
 
 async function addItemByNameFromOverlay(name) {
-  if (!addOverlayListId || !name) return;
-  try {
-    const added = await api(`/lists/${addOverlayListId}/items/by-name?name=${encodeURIComponent(name)}`, { method: 'POST' });
-    if (added?.library_item) {
-      addOverlayAddedIds.add(added.library_item.id);
-      if (!allLibrary.find(i => i.id === added.library_item.id)) allLibrary.push(added.library_item);
-    }
-    renderAddItemsList(document.getElementById('add-overlay-search').value);
-    loadShoppingList();
-    toast('Added');
-    playAddSound();
-  } catch (e) { toast(e.message); }
+  if (!name) return;
+  // Open the full item modal pre-filled with the name so the user can set all details.
+  // The modal's save handler will add it to the list automatically if addOverlayListId is set.
+  showItemModal(null, name);
 }
 
 document.getElementById('btn-open-add-overlay').addEventListener('click', openAddItemsOverlay);
@@ -1386,31 +1883,53 @@ async function loadShoppingList() {
       const editedAgo = (i.updated_at && i.created_at && (new Date(i.updated_at).getTime() - new Date(i.created_at).getTime() > 5000)) ? timeAgo(i.updated_at) : '';
       const metaText = `Added by ${who} · ${addedAgo}${editedAgo ? ' · edited ' + editedAgo : ''}`;
       const unitOpts = unitList.map(u => `<option value="${u}" ${i.unit===u?'selected':''}>${u}</option>`).join('');
-      html += `<div class="list-item${hl}${recentClass}" data-item-id="${i.id}">
-        <div class="list-item-row">
-          ${icon ? `<span class="item-icon">${icon}</span>` : ''}${thumb}
-          <span class="name">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}</span>
-          <span class="qty-edit">
-            <span class="list-qty-wrap">
-              <button type="button" class="list-qty-minus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Decrease">−</button>
-              <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input" data-list-id="${listId}" data-item-id="${i.id}">
-              <button type="button" class="list-qty-plus" data-list-id="${listId}" data-item-id="${i.id}" aria-label="Increase">+</button>
-            </span>
-          </span>
-          <select class="unit-select" data-list-id="${listId}" data-item-id="${i.id}">${unitOpts}</select>
-          <span class="actions">
-            <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">✕</button>
-            <button class="btn-sm btn-purchase" onclick="purchaseItem(${listId},${i.id})" title="Mark purchased">✓</button>
-          </span>
+      const expMeta = i.expiration_date ? ` · exp ${i.expiration_date}` : '';
+      const isReplaceIn = replaceAnimLibId && i.library_item_id === replaceAnimLibId;
+      if (isReplaceIn) replaceAnimLibId = null;
+      html += `<div class="swipe-row${isReplaceIn ? ' replace-in' : ''}">
+        <div class="swipe-actions">
+          <button class="swipe-btn-replace" data-list-id="${listId}" data-item-id="${i.id}" data-item-name="${(i.library_item?.name||'?').replace(/"/g,'&quot;')}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+            Replace
+          </button>
+          <button class="swipe-btn-delete" data-list-id="${listId}" data-item-id="${i.id}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
+            Delete
+          </button>
         </div>
-        <div class="list-item-meta">${metaText}</div>
+        <div class="list-item${hl}${recentClass}" data-item-id="${i.id}">
+          <div class="list-item-row">
+            ${icon ? `<span class="item-icon item-tappable" data-list-id="${listId}" data-item-id="${i.id}">${icon}</span>` : ''}${thumb}
+            <span class="name item-tappable" data-list-id="${listId}" data-item-id="${i.id}">${i.library_item?.name || '?'}${i.notes ? ' — '+i.notes : ''}</span>
+            <span class="qty qty-display item-tappable" data-list-id="${listId}" data-item-id="${i.id}">${i.quantity} ${i.unit}</span>
+            <span class="actions">
+              <button class="btn-exp-cal${i.expiration_date ? ' has-date' : ''}" data-list-id="${listId}" data-item-id="${i.id}" data-exp="${i.expiration_date||''}" title="${i.expiration_date ? 'Expires '+i.expiration_date : 'Set expiration date'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13L14 17M14 13L10 17M3 9H21M7 3V5M17 3V5M6.2 21H17.8C18.9201 21 19.4802 21 19.908 20.782C20.2843 20.5903 20.5903 20.2843 20.782 19.908C21 19.4802 21 18.9201 21 17.8V8.2C21 7.07989 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.07989 3 8.2V17.8C3 18.9201 3 19.4802 3.21799 19.908C3.40973 20.2843 3.71569 20.5903 4.09202 20.782C4.51984 21 5.07989 21 6.2 21Z"/></svg></button>
+              <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})" title="Remove">&#10005;</button>
+              <button class="btn-sm btn-purchase" onclick="purchaseItem(${listId},${i.id},this)" title="Mark purchased"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 6,11 12,3"/></svg></button>
+            </span>
+          </div>
+          <div class="item-edit-panel" data-list-id="${listId}" data-item-id="${i.id}">
+            <span class="list-qty-wrap">
+              <button type="button" class="list-qty-minus" aria-label="Decrease">&#8722;</button>
+              <input type="number" step="any" min="0.01" value="${i.quantity}" class="qty-input">
+              <button type="button" class="list-qty-plus" aria-label="Increase">+</button>
+            </span>
+            <select class="unit-select">${unitOpts}</select>
+            <span style="display:inline-flex;gap:6px;flex-shrink:0">
+              <button type="button" class="btn-sm btn-primary btn-item-save">Save</button>
+              <button type="button" class="btn-sm btn-item-cancel">Cancel</button>
+            </span>
+          </div>
+          <div class="list-item-meta">${metaText}${expMeta}</div>
+        </div>
       </div>`;
     });
     html += '</div>';
   }
 
   if (purchased.length) {
-    html += `<div class="list-group"><h3>✅ Purchased</h3>`;
+    purchased.sort((a, b) => new Date(b.purchased_at || 0) - new Date(a.purchased_at || 0));
+    html += `<div class="list-group"><h3 style="display:flex;align-items:center;justify-content:space-between">✅ Purchased<button class="btn-sm btn-danger" onclick="clearAllPurchased(${listId})" title="Remove all purchased items">Clear all</button></h3>`;
     purchased.forEach(i => {
       const hl = changedIds.has(i.id) ? ' list-item-highlight' : '';
       const icon = itemDisplayIcon(i.library_item);
@@ -1423,7 +1942,7 @@ async function loadShoppingList() {
           <span class="name">${i.library_item?.name || '?'}</span>
           <span class="qty">${i.quantity} ${i.unit}</span>
           <span class="actions">
-            <button class="btn-sm btn-unpurchase" onclick="markBackToBuy(${listId},${i.id})" title="Move back to list">To buy</button>
+            <button class="btn-sm btn-unpurchase" onclick="markBackToBuy(${listId},${i.id},this)" title="Move back to list">To buy</button>
             <button class="btn-sm btn-danger" onclick="removeItem(${listId},${i.id})">✕</button>
           </span>
         </div>
@@ -1468,24 +1987,252 @@ async function loadShoppingList() {
     } catch (e) { toast(e.message); }
   }
 
-  document.getElementById('shopping-content').querySelectorAll('.list-qty-minus').forEach(btn => {
-    btn.addEventListener('click', async function() {
-      const row = this.closest('.list-item');
-      applyListQtyStep(row, -1);
-      await saveListItemQty(row);
+  const shoppingContent = document.getElementById('shopping-content');
+
+  // ── Expiration date calendar popup ──
+  (function initCalPopup() {
+    const popup  = document.getElementById('cal-popup');
+    const grid   = document.getElementById('cal-grid');
+    const label  = document.getElementById('cal-month-label');
+    if (!popup || popup._calInited) return;
+    popup._calInited = true;
+
+    let state = { year: 0, month: 0, selected: '', btn: null };
+    const DAYS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+    function render() {
+      const today = new Date();
+      const y = state.year, m = state.month;
+      label.textContent = new Date(y, m, 1).toLocaleString('default', {month:'long', year:'numeric'});
+      const first = new Date(y, m, 1).getDay(); // 0=Sun
+      const offset = (first === 0 ? 6 : first - 1); // Mon-based offset
+      const days = new Date(y, m + 1, 0).getDate();
+      let html = DAYS.map(d => `<span class="cal-dow">${d}</span>`).join('');
+      for (let i = 0; i < offset; i++) html += `<span class="cal-day empty"></span>`;
+      for (let d = 1; d <= days; d++) {
+        const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isTod = iso === `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const isSel = iso === state.selected;
+        html += `<button class="cal-day${isTod?' today':''}${isSel?' selected':''}" data-iso="${iso}">${d}</button>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    document.getElementById('cal-prev').addEventListener('click', () => {
+      if (--state.month < 0) { state.month = 11; state.year--; }
+      render();
+    });
+    document.getElementById('cal-next').addEventListener('click', () => {
+      if (++state.month > 11) { state.month = 0; state.year++; }
+      render();
+    });
+
+    async function applyDate(iso) {
+      const { btn } = state;
+      if (!btn) return;
+      const listId = btn.dataset.listId, itemId = btn.dataset.itemId;
+      try {
+        await api(`/lists/${listId}/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ expiration_date: iso || null }) });
+        btn.dataset.exp = iso || '';
+        btn.classList.toggle('has-date', !!iso);
+        btn.title = iso ? 'Expires ' + iso : 'Set expiration date';
+        const meta = btn.closest('.list-item')?.querySelector('.list-item-meta');
+        if (meta) meta.textContent = meta.textContent.replace(/ · exp \S+$/, '') + (iso ? ` · exp ${iso}` : '');
+      } catch (e) { toast(e.message); }
+    }
+
+    grid.addEventListener('click', async e => {
+      const day = e.target.closest('.cal-day');
+      if (!day || day.classList.contains('empty')) return;
+      const iso = day.dataset.iso;
+      const clearing = iso === state.selected;
+      state.selected = clearing ? '' : iso;
+      render();
+      await applyDate(clearing ? '' : iso);
+      if (!clearing) closePopup();
+    });
+
+    document.getElementById('cal-clear').addEventListener('click', async () => {
+      state.selected = '';
+      await applyDate('');
+      closePopup();
+    });
+
+    function closePopup() {
+      popup.style.display = 'none';
+      state.btn = null;
+    }
+
+    document.addEventListener('pointerdown', e => {
+      if (popup.style.display !== 'none' && !popup.contains(e.target) && !e.target.closest('.btn-exp-cal'))
+        closePopup();
+    }, true);
+
+    window._openCalPopup = function(btn) {
+      state.btn = btn;
+      state.selected = btn.dataset.exp || '';
+      const d = state.selected ? new Date(state.selected + 'T00:00:00') : new Date();
+      state.year = d.getFullYear(); state.month = d.getMonth();
+      render();
+      // position
+      const r = btn.getBoundingClientRect();
+      popup.style.display = 'block';
+      const pw = popup.offsetWidth, ph = popup.offsetHeight;
+      let top = r.bottom + 6, left = r.left;
+      if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+      if (top + ph > window.innerHeight - 8) top = r.top - ph - 6;
+      popup.style.top = top + 'px'; popup.style.left = left + 'px';
+    };
+  })();
+
+  function closeEditPanel(panel) {
+    panel.classList.remove('open');
+    panel.closest('.list-item')?.classList.remove('is-editing');
+  }
+  function toggleEditPanel(panel) {
+    const isOpen = panel.classList.contains('open');
+    shoppingContent.querySelectorAll('.item-edit-panel.open').forEach(p => closeEditPanel(p));
+    if (!isOpen) {
+      panel.classList.add('open');
+      panel.closest('.list-item')?.classList.add('is-editing');
+    }
+  }
+
+  shoppingContent.querySelectorAll('.btn-exp-cal').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (window._openCalPopup) window._openCalPopup(btn);
     });
   });
-  document.getElementById('shopping-content').querySelectorAll('.list-qty-plus').forEach(btn => {
-    btn.addEventListener('click', async function() {
-      const row = this.closest('.list-item');
-      applyListQtyStep(row, 1);
-      await saveListItemQty(row);
+
+  shoppingContent.querySelectorAll('.item-tappable').forEach(el => {
+    el.addEventListener('click', function() {
+      toggleEditPanel(this.closest('.list-item').querySelector('.item-edit-panel'));
     });
   });
-  document.getElementById('shopping-content').querySelectorAll('.qty-input, .unit-select').forEach(el => {
-    el.addEventListener('change', async function() {
+
+  shoppingContent.querySelectorAll('.item-edit-panel .list-qty-minus').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const panel = this.closest('.item-edit-panel');
+      const qtyInput = panel.querySelector('.qty-input');
+      const unitSelect = panel.querySelector('.unit-select');
+      const step = UNIT_STEP[unitSelect.value] ?? 1;
+      let val = parseFloat(qtyInput.value);
+      if (Number.isNaN(val)) val = step;
+      qtyInput.value = Math.max(0.01, Math.round((val - step) * 100) / 100);
+    });
+  });
+
+  shoppingContent.querySelectorAll('.item-edit-panel .list-qty-plus').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const panel = this.closest('.item-edit-panel');
+      const qtyInput = panel.querySelector('.qty-input');
+      const unitSelect = panel.querySelector('.unit-select');
+      const step = UNIT_STEP[unitSelect.value] ?? 1;
+      let val = parseFloat(qtyInput.value);
+      if (Number.isNaN(val)) val = 0;
+      qtyInput.value = Math.round((val + step) * 100) / 100;
+    });
+  });
+
+  shoppingContent.querySelectorAll('.btn-item-save').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const panel = this.closest('.item-edit-panel');
       const row = this.closest('.list-item');
-      await saveListItemQty(row);
+      const lId = panel.dataset.listId;
+      const iId = panel.dataset.itemId;
+      const qty = parseFloat(panel.querySelector('.qty-input').value) || 0.01;
+      const unit = panel.querySelector('.unit-select').value;
+      try {
+        await api(`/lists/${lId}/items/${iId}`, { method: 'PUT', body: JSON.stringify({ quantity: qty, unit }) });
+        toast('Updated');
+        playEditSound();
+        row.querySelector('.qty-display').textContent = `${qty} ${unit}`;
+        closeEditPanel(panel);
+      } catch (e) { toast(e.message); }
+    });
+  });
+
+  shoppingContent.querySelectorAll('.btn-item-cancel').forEach(btn => {
+    btn.addEventListener('click', function() {
+      closeEditPanel(this.closest('.item-edit-panel'));
+    });
+  });
+
+  initSwipeRows(shoppingContent);
+}
+
+function initSwipeRows(container) {
+  const ACTIONS_W = 160;
+  let activeRow = null;
+
+  function snapClose(row) {
+    const card = row.querySelector('.list-item');
+    card.style.transform = '';
+    card.classList.remove('swipe-open');
+    row.querySelector('.swipe-actions').classList.remove('open');
+    activeRow = null;
+  }
+  function snapOpen(row) {
+    if (activeRow && activeRow !== row) snapClose(activeRow);
+    const card = row.querySelector('.list-item');
+    card.style.transform = `translateX(-${ACTIONS_W}px)`;
+    card.classList.add('swipe-open');
+    row.querySelector('.swipe-actions').classList.add('open');
+    activeRow = row;
+  }
+
+  document.addEventListener('pointerdown', e => {
+    if (activeRow && !activeRow.contains(e.target)) snapClose(activeRow);
+  }, true);
+
+  container.querySelectorAll('.swipe-row').forEach(row => {
+    const card = row.querySelector('.list-item');
+    let startX = 0, startY = 0, currentX = 0, dragging = false, didDrag = false;
+    const isOpen = () => card.style.transform !== '' && card.style.transform !== 'translateX(0px)';
+
+    card.addEventListener('pointerdown', e => {
+      if (e.button !== 0 && e.pointerType !== 'touch') return;
+      startX = e.clientX; startY = e.clientY; dragging = true; didDrag = false;
+      card.setPointerCapture(e.pointerId);
+    });
+
+    card.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!didDrag && Math.abs(dy) > Math.abs(dx)) { dragging = false; return; }
+      if (Math.abs(dx) < 4 && !didDrag) return;
+      didDrag = true;
+      card.classList.add('swiping');
+      const base = isOpen() ? -ACTIONS_W : 0;
+      currentX = Math.max(-ACTIONS_W, Math.min(0, base + dx));
+      card.style.transform = currentX === 0 ? '' : `translateX(${currentX}px)`;
+    });
+
+    card.addEventListener('pointerup', e => {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('swiping');
+      const dx = e.clientX - startX;
+      if (!didDrag) { if (isOpen()) snapClose(row); return; }
+      if (isOpen()) {
+        if (dx > 40) snapClose(row); else snapOpen(row);
+      } else {
+        if (dx < -60) snapOpen(row); else snapClose(row);
+      }
+    });
+
+    row.querySelector('.swipe-btn-delete').addEventListener('click', () => {
+      const btn = row.querySelector('.swipe-btn-delete');
+      removeItem(btn.dataset.listId, btn.dataset.itemId);
+      snapClose(row);
+    });
+
+    row.querySelector('.swipe-btn-replace').addEventListener('click', () => {
+      const btn = row.querySelector('.swipe-btn-replace');
+      openReplaceOverlay(btn.dataset.listId, btn.dataset.itemId, btn.dataset.itemName);
+      snapClose(row);
     });
   });
 }
@@ -1803,7 +2550,7 @@ async function loadRecentPurchases() {
   const sel = document.getElementById('recent-list-filter');
   if (sel) {
     sel.innerHTML = '<option value="">All lists</option>' +
-      lists.map(l => `<option value="${l.id}" ${listId === String(l.id) ? 'selected' : ''}>${l.name}</option>`).join('');
+      lists.map(l => `<option value="${l.id}" ${listId === String(l.id) ? 'selected' : ''}>${l.icon ? l.icon + ' ' : ''}${l.name}</option>`).join('');
   }
   if (!data.length) {
     document.getElementById('recent-content').innerHTML = '<p style="color:var(--muted)">No recent purchases. Mark items as purchased on a list to see them here.</p>';
@@ -1849,19 +2596,45 @@ function showExpModal(listId, itemId, currentDate) {
   });
 }
 
-async function purchaseItem(listId, itemId) {
-  await api(`/lists/${listId}/items/${itemId}/purchase`, {method: 'PATCH'});
-  playCompleteSound();
-  loadShoppingList();
+function animateItemOut(btn, callback) {
+  const card = btn?.closest('.list-item');
+  if (!card) { callback(); return; }
+  card.classList.add('animating-out');
+  card.addEventListener('animationend', callback, {once: true});
 }
 
-async function markBackToBuy(listId, itemId) {
-  await api(`/lists/${listId}/items/${itemId}`, {method: 'PUT', body: JSON.stringify({status: 'pending'})});
-  loadShoppingList();
+async function purchaseItem(listId, itemId, btn) {
+  if (btn) {
+    btn.classList.add('pop');
+    btn.addEventListener('animationend', () => btn.classList.remove('pop'), {once: true});
+  }
+  animateItemOut(btn, async () => {
+    await api(`/lists/${listId}/items/${itemId}/purchase`, {method: 'PATCH'});
+    playCompleteSound();
+    loadShoppingList();
+  });
+}
+
+async function markBackToBuy(listId, itemId, btn) {
+  animateItemOut(btn, async () => {
+    await api(`/lists/${listId}/items/${itemId}`, {method: 'PUT', body: JSON.stringify({status: 'pending'})});
+    loadShoppingList();
+  });
 }
 
 async function removeItem(listId, itemId) {
   await api(`/lists/${listId}/items/${itemId}`, {method: 'DELETE'});
+  playRemoveSound();
+  loadShoppingList();
+}
+
+async function clearAllPurchased(listId) {
+  if (!confirm('Remove all purchased items from this list?')) return;
+  const list = await api(`/lists/${listId}`);
+  const ids = list.items.filter(i => i.status === 'purchased').map(i => i.id);
+  for (const id of ids) {
+    await api(`/lists/${listId}/items/${id}`, { method: 'DELETE' });
+  }
   playRemoveSound();
   loadShoppingList();
 }

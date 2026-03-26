@@ -79,10 +79,12 @@ class LibraryItemOut(BaseModel):
 
 class GroceryListCreate(BaseModel):
     name: str
+    icon: str | None = "🛒"
 
 
 class GroceryListUpdate(BaseModel):
     name: str | None = None
+    icon: str | None = None
     is_active: bool | None = None
 
 
@@ -124,6 +126,7 @@ class ActivityOut(BaseModel):
 class GroceryListOut(BaseModel):
     id: int
     name: str
+    icon: str | None = "🛒"
     is_active: bool
     created_by_id: int | None = None
     created_at: datetime
@@ -136,6 +139,7 @@ class GroceryListOut(BaseModel):
 class GroceryListSummary(BaseModel):
     id: int
     name: str
+    icon: str | None = "🛒"
     is_active: bool
     created_by_id: int | None = None
     created_at: datetime

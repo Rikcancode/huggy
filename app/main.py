@@ -68,6 +68,11 @@ def _run_migrations():
             if not any(row[1] == "recipe_servings" for row in r):
                 conn.execute(text("ALTER TABLE meal_plan_entries ADD COLUMN recipe_servings INTEGER"))
                 conn.commit()
+            # grocery list icon
+            r = conn.execute(text("PRAGMA table_info(grocery_lists)"))
+            if not any(row[1] == "icon" for row in r):
+                conn.execute(text("ALTER TABLE grocery_lists ADD COLUMN icon VARCHAR(10) DEFAULT '🛒'"))
+                conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 
