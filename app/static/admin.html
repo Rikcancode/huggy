@@ -207,8 +207,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .swipe-row .list-item.swipe-open .btn-exp-cal { opacity: .25; pointer-events: none; transition: opacity .2s; }
 .swipe-row .list-item .actions,
 .swipe-row .list-item .btn-exp-cal { transition: opacity .2s; }
-.swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; width: 160px; pointer-events: none; }
+.swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; width: 0; opacity: 0; overflow: hidden; pointer-events: none; transition: width .25s cubic-bezier(.4,0,.2,1), opacity .25s; }
 .swipe-actions.open { pointer-events: auto; }
+.swipe-actions.swiping { transition: none; }
 .swipe-btn-replace, .swipe-btn-delete { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; cursor: pointer; font-size: .72rem; font-weight: 600; color: #fff; line-height: 1.2; }
 .swipe-btn-replace { background: var(--accent); }
 .swipe-btn-delete { background: var(--red); }
@@ -2167,17 +2168,25 @@ function initSwipeRows(container) {
 
   function snapClose(row) {
     const card = row.querySelector('.list-item');
+    const actions = row.querySelector('.swipe-actions');
+    actions.classList.remove('swiping');
     card.style.transform = '';
     card.classList.remove('swipe-open');
-    row.querySelector('.swipe-actions').classList.remove('open');
+    actions.classList.remove('open');
+    actions.style.width = '';
+    actions.style.opacity = '';
     activeRow = null;
   }
   function snapOpen(row) {
     if (activeRow && activeRow !== row) snapClose(activeRow);
     const card = row.querySelector('.list-item');
+    const actions = row.querySelector('.swipe-actions');
+    actions.classList.remove('swiping');
     card.style.transform = `translateX(-${ACTIONS_W}px)`;
     card.classList.add('swipe-open');
-    row.querySelector('.swipe-actions').classList.add('open');
+    actions.classList.add('open');
+    actions.style.width = ACTIONS_W + 'px';
+    actions.style.opacity = '1';
     activeRow = row;
   }
 
@@ -2187,12 +2196,13 @@ function initSwipeRows(container) {
 
   container.querySelectorAll('.swipe-row').forEach(row => {
     const card = row.querySelector('.list-item');
-    let startX = 0, startY = 0, currentX = 0, dragging = false, didDrag = false;
+    let startX = 0, startY = 0, currentX = 0, dragging = false, didDrag = false, wasOpen = false;
     const isOpen = () => card.style.transform !== '' && card.style.transform !== 'translateX(0px)';
 
     card.addEventListener('pointerdown', e => {
       if (e.button !== 0 && e.pointerType !== 'touch') return;
       startX = e.clientX; startY = e.clientY; dragging = true; didDrag = false;
+      wasOpen = isOpen();
       card.setPointerCapture(e.pointerId);
     });
 
@@ -2203,19 +2213,26 @@ function initSwipeRows(container) {
       if (!didDrag && Math.abs(dy) > Math.abs(dx)) { dragging = false; return; }
       if (Math.abs(dx) < 4 && !didDrag) return;
       didDrag = true;
+      const actions = row.querySelector('.swipe-actions');
       card.classList.add('swiping');
-      const base = isOpen() ? -ACTIONS_W : 0;
+      actions.classList.add('swiping');
+      const base = wasOpen ? -ACTIONS_W : 0;
       currentX = Math.max(-ACTIONS_W, Math.min(0, base + dx));
       card.style.transform = currentX === 0 ? '' : `translateX(${currentX}px)`;
+      const progress = Math.abs(currentX) / ACTIONS_W;
+      actions.style.width = (ACTIONS_W * progress) + 'px';
+      actions.style.opacity = String(progress);
+      if (progress > 0) actions.classList.add('open'); else actions.classList.remove('open');
     });
 
     card.addEventListener('pointerup', e => {
       if (!dragging) return;
       dragging = false;
       card.classList.remove('swiping');
+      row.querySelector('.swipe-actions').classList.remove('swiping');
       const dx = e.clientX - startX;
       if (!didDrag) { if (isOpen()) snapClose(row); return; }
-      if (isOpen()) {
+      if (wasOpen) {
         if (dx > 40) snapClose(row); else snapOpen(row);
       } else {
         if (dx < -60) snapOpen(row); else snapClose(row);
