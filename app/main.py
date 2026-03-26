@@ -73,6 +73,31 @@ def _run_migrations():
             if not any(row[1] == "icon" for row in r):
                 conn.execute(text("ALTER TABLE grocery_lists ADD COLUMN icon VARCHAR(10) DEFAULT '🛒'"))
                 conn.commit()
+        # Fix library item icons
+        icon_fixes = {
+            "Celery Stalks": "🌿",
+            "Rucola": "🌿",
+            "Green Onions": "🌿",
+            "Cauliflower": "🤍",
+            "Purple Cabbage": "🟣",
+            "Salami": "🍖",
+            "Prosciutto Cotto / Ham": "🍖",
+            "Cooking Cream": "🫗",
+            "Skyr": "🫙",
+            "Cottage Cheese": "🫙",
+            "Greek Yoghurt 0%": "🍶",
+            "Mini Yoghurts for Nora": "🍦",
+            "Toasted Sesame Oil": "🌻",
+            "Apple Cider Vinegar": "🍎",
+            "Vanilla Extract": "🌸",
+            "Sparkling Water": "🫧",
+            "Tonic": "🫧",
+            "Wet Wipes": "🫧",
+            "Frozen Peas": "🫛",
+        }
+        for name, icon in icon_fixes.items():
+            conn.execute(text("UPDATE library_items SET icon = :icon WHERE name = :name"), {"icon": icon, "name": name})
+        conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 

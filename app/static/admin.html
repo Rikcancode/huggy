@@ -168,16 +168,18 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 
 .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .lib-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  padding: 12px; display: flex; flex-direction: column; gap: 5px;
+  cursor: pointer; transition: border-color .18s, box-shadow .18s; }
+.lib-card:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
 .lib-card-top { display: flex; align-items: center; gap: 8px; }
 .lib-card-icon { font-size: 1.6rem; flex-shrink: 0; }
-.lib-card-name { font-weight: 600; font-size: .9rem; line-height: 1.3; }
-.lib-card-cat { font-size: .75rem; color: var(--muted); }
-.lib-card-qty { font-size: .78rem; color: var(--accent); font-weight: 600; }
-.lib-card-notes { font-size: .72rem; color: var(--muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lib-card-actions { display: flex; gap: 6px; margin-top: 4px; }
-.lib-card-actions button { flex: 1; }
-.lib-card img.item-thumb { width: 100%; height: 60px; object-fit: cover; border-radius: 4px; }
+.lib-card-name { font-weight: 600; font-size: .88rem; line-height: 1.3; }
+.lib-card-cat { font-size: .72rem; color: var(--muted); }
+.lib-card-qty { font-size: .72rem; color: var(--accent); font-weight: 600; }
+.lib-card-qty span.lib-qty-label { color: var(--muted); font-weight: 400; }
+.lib-card-notes { font-size: .7rem; color: var(--muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-card-del { align-self: flex-end; margin-top: 2px; }
+.lib-card img.item-thumb { width: 100%; height: 56px; object-fit: cover; border-radius: 4px; }
 .library-categories-details { margin-bottom: 20px; }
 .library-categories-details summary { cursor: pointer; font-weight: 600; color: var(--muted); padding: 8px 0; }
 .library-categories-details summary:hover { color: var(--text); }
@@ -199,7 +201,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .list-group { margin-bottom: 20px; }
 .list-group h3 { font-size: .95rem; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .swipe-row { position: relative; border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
-.swipe-row .list-item { margin-bottom: 0; touch-action: pan-y; will-change: transform; transition: transform .25s cubic-bezier(.4,0,.2,1); }
+.swipe-row .list-item { margin-bottom: 0; touch-action: pan-y; will-change: transform; transition: transform .25s cubic-bezier(.4,0,.2,1); position: relative; z-index: 1; }
 .swipe-row .list-item.swiping { transition: none; }
 .swipe-row .list-item.swipe-open .actions,
 .swipe-row .list-item.swipe-open .btn-exp-cal { opacity: .25; pointer-events: none; transition: opacity .2s; }
@@ -481,7 +483,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   <div class="signin-prompt-bar" id="signin-prompt-bar">Sign in using the <button type="button" id="signin-prompt-open-menu">menu ☰</button></div>
   <div class="app-topbar">
     <header class="app-header">
-      <div class="app-logo">
+      <div class="app-logo" onclick="switchToTab('shopping')" style="cursor:pointer">
         <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M97.8321 310.687C93.8478 250.409 91.4278 163.827 124.259 127.664C140.43 109.851 164.023 111.991 202.406 111.991C229.619 111.991 264.358 110.277 281.616 131.852C311.146 168.764 298.683 264.684 298.683 311.051" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M144.124 311.051C136.474 262.469 134.416 183.062 194.663 169.701C207.312 166.893 221.213 165.153 232.963 171.017C266.992 188.002 262.677 253.226 262.677 283.72C262.677 292.926 260.169 316.401 260.169 309.948" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
@@ -494,7 +496,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
           <path d="M222.711 142.102C222.711 139.51 222.711 136.914 222.711 134.322" stroke="currentColor" stroke-opacity="0.9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <span class="app-brand">Mechou</span>
+      <span class="app-brand" onclick="switchToTab('shopping')" style="cursor:pointer">Mechou</span>
     </header>
     <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-drawer" aria-label="Menu">☰</button>
   </div>
@@ -1358,19 +1360,16 @@ async function loadLibrary() {
   if (q) url += `q=${encodeURIComponent(q)}&`;
   if (cat) url += `category_id=${cat}&`;
   allLibrary = await api(url);
-  document.getElementById('lib-body').innerHTML = allLibrary.map(i => `<div class="lib-card">
+  document.getElementById('lib-body').innerHTML = allLibrary.map(i => `<div class="lib-card" onclick='editItem(${JSON.stringify(i).replace(/'/g,"&#39;")})'>
     ${i.image_url ? `<img src="${i.image_url}" class="item-thumb" alt="">` : ''}
     <div class="lib-card-top">
       <span class="lib-card-icon">${itemDisplayIcon(i)}</span>
       <span class="lib-card-name">${escapeHtml(i.name)}</span>
     </div>
     <div class="lib-card-cat">${i.category?.icon || ''} ${escapeHtml(i.category?.name || 'No category')}</div>
-    <div class="lib-card-qty">${i.default_quantity} ${i.unit}</div>
+    <div class="lib-card-qty"><span class="lib-qty-label">Def. qty </span>${i.default_quantity} ${i.unit}</div>
     ${i.notes ? `<div class="lib-card-notes">${escapeHtml(i.notes)}</div>` : ''}
-    <div class="lib-card-actions">
-      <button class="btn-sm" onclick='editItem(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✎ Edit</button>
-      <button class="btn-sm btn-danger" onclick="delItem(${i.id})">✕</button>
-    </div>
+    <button class="btn-sm btn-danger lib-card-del" onclick="event.stopPropagation();delItem(${i.id})">✕</button>
   </div>`).join('');
   updateSuggestions();
   if (document.getElementById('add-items-overlay')?.style.display === 'flex') {
@@ -2556,21 +2555,27 @@ async function loadRecentPurchases() {
     document.getElementById('recent-content').innerHTML = '<p style="color:var(--muted)">No recent purchases. Mark items as purchased on a list to see them here.</p>';
     return;
   }
-  let html = '<div class="list-group"><h3>Recent purchases</h3>';
+  let html = '<div class="list-group">';
   data.forEach(({ list_id, list_name, item: i }) => {
     const icon = itemDisplayIcon(i.library_item);
-    const expBadge = i.expiration_date ? `<span class="badge ${expiryClass(i.expiration_date)}" style="margin-left:6px">${i.expiration_date}</span>` : '';
-    const purchasedAt = i.purchased_at ? new Date(i.purchased_at).toLocaleString() : '';
-    const by = i.purchased_by?.name ? ` by ${i.purchased_by.name}` : '';
+    const listIcon = i.list_icon || '';
+    const by = i.purchased_by_display_name || i.purchased_by?.name || '';
+    const pAgo = timeAgo(i.purchased_at);
+    const metaText = `${listIcon ? listIcon + ' ' : ''}${list_name} · ${pAgo}${by ? ' · by ' + by : ''}`;
+    const expMeta = i.expiration_date ? ` · exp ${i.expiration_date}` : '';
+    const expClass = i.expiration_date ? ' has-date' : '';
     html += `<div class="list-item">
-      ${icon ? `<span class="item-icon">${icon}</span>` : ''}
-      <span class="qty">${i.quantity} ${i.unit}</span>
-      <span class="name">${i.library_item?.name || '?'} — <em>${list_name}</em>${expBadge}</span>
-      <span style="font-size:.75rem;color:var(--muted)">${purchasedAt}${by}</span>
-      <span class="actions">
-        <button class="btn-sm" onclick="showExpModal(${list_id},${i.id},'${i.expiration_date || ''}')" title="Set expiration">📅 Set expiration</button>
-        <button class="btn-sm btn-danger" onclick="removeItem(${list_id},${i.id}); loadRecentPurchases();" title="Remove">✕</button>
-      </span></div>`;
+      <div class="list-item-row">
+        ${icon ? `<span class="item-icon">${icon}</span>` : ''}
+        <span class="name">${i.library_item?.name || '?'}</span>
+        <span class="qty">${i.quantity} ${i.unit}</span>
+        <span class="actions">
+          <button class="btn-exp-cal${expClass}" onclick="showExpModal(${list_id},${i.id},'${i.expiration_date || ''}')" title="${i.expiration_date ? 'Expires ' + i.expiration_date : 'Set expiration date'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13L14 17M14 13L10 17M3 9H21M7 3V5M17 3V5M6.2 21H17.8C18.9201 21 19.4802 21 19.908 20.782C20.2843 20.5903 20.5903 20.2843 20.782 19.908C21 19.4802 21 18.9201 21 17.8V8.2C21 7.07989 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.07989 3 8.2V17.8C3 18.9201 3 19.4802 3.21799 19.908C3.40973 20.2843 3.71569 20.5903 4.09202 20.782C4.51984 21 5.07989 21 6.2 21Z"/></svg></button>
+          <button class="btn-sm btn-danger" onclick="removeItem(${list_id},${i.id}); loadRecentPurchases();" title="Remove">&#10005;</button>
+        </span>
+      </div>
+      <div class="list-item-meta">${metaText}${expMeta}</div>
+    </div>`;
   });
   html += '</div>';
   document.getElementById('recent-content').innerHTML = html;
@@ -2592,7 +2597,8 @@ function showExpModal(listId, itemId, currentDate) {
   `, async () => {
     const d = gv('m-exp-date') || null;
     await api(`/lists/${listId}/items/${itemId}`, {method: 'PUT', body: JSON.stringify({expiration_date: d})});
-    closeModal(); toast('Expiration date saved'); loadShoppingList();
+    closeModal(); toast('Expiration date saved');
+    if (document.querySelector('#panel-recent.active')) loadRecentPurchases(); else loadShoppingList();
   });
 }
 
