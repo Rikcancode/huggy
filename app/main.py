@@ -10,7 +10,7 @@ from sqlalchemy import text
 from app.database import engine, SessionLocal, Base
 from app.config import settings
 from app.seed import seed_database
-from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes
+from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes, gcal
 from app.ws import ConnectionManager
 
 ws_manager = ConnectionManager()
@@ -141,6 +141,7 @@ app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(meal_plan.router)
 app.include_router(recipes.router)
+app.include_router(gcal.router)
 
 static_dir = Path(__file__).parent / "static"
 uploads_dir = Path(settings.upload_dir) if settings.upload_dir else Path(__file__).resolve().parent.parent / "uploads"

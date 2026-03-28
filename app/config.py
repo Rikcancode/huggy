@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     obsidian_recipes_auto_sync: bool = True
     # Minimum seconds between automatic folder sync attempts.
     obsidian_recipes_sync_interval_seconds: int = 300
+    # Google Calendar integration
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""   # e.g. http://your-server/api/gcal/callback
+    google_calendar_id: str = "primary"
 
     model_config = {"env_prefix": "GROCERY_"}
 

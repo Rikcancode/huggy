@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Mechou — Admin</title>
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icon-180.png">
@@ -378,7 +378,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .cal-item.soon { background: rgba(251,146,60,.2); color: var(--orange); }
 .cal-item.ok { background: rgba(52,211,153,.15); color: var(--green); }
 .cal-more { font-size: .7rem; color: var(--muted); padding: 1px 4px; cursor: pointer; }
-.cal-legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: .8rem; color: var(--muted); align-items: center; }
+.cal-legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: .8rem; color: var(--muted); align-items: center; flex-wrap: wrap; }
+.cal-item.gcal { background: rgba(66,133,244,.15); color: #4285F4; cursor: pointer; }
+.cal-item.gcal:hover { background: rgba(66,133,244,.25); }
+.cal-dot-gcal { background: #4285F4; }
+.cal-cell-clickable { cursor: pointer; }
+.cal-cell-clickable:hover { background: var(--surface); filter: brightness(1.05); }
+.gcal-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: .85rem; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.gcal-bar .gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.gcal-bar .gcal-dot.connected { background: var(--green); }
 
 .recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .recipe-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: border-color .2s; }
@@ -644,10 +652,17 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
       <button class="btn-sm" onclick="calNav(1)">Next &rarr;</button>
       <button class="btn-sm" onclick="calGoToday()" style="margin-left:8px">Today</button>
     </div>
+    <div id="gcal-bar" class="gcal-bar" style="display:none">
+      <span id="gcal-bar-dot" class="gcal-dot"></span>
+      <span id="gcal-bar-text" style="flex:1">Google Calendar</span>
+      <button id="gcal-connect-btn" class="btn-sm btn-primary" onclick="gcalConnect()" style="display:none">Connect</button>
+      <button id="gcal-disconnect-btn" class="btn-sm" onclick="gcalDisconnect()" style="display:none;color:var(--red)">Disconnect</button>
+    </div>
     <div class="cal-legend">
       <span><span class="cal-dot cal-dot-expired"></span> Expired</span>
       <span><span class="cal-dot cal-dot-soon"></span> Expiring soon</span>
       <span><span class="cal-dot cal-dot-ok"></span> OK</span>
+      <span id="gcal-legend-item" style="display:none"><span class="cal-dot cal-dot-gcal"></span> Google Calendar</span>
     </div>
     <div id="cal-grid" class="cal-grid"></div>
   </div>
@@ -2792,7 +2807,7 @@ function showUserModal() {
 async function delUser(id) { if(!confirm('Delete?')) return; await api(`/users/${id}`,{method:'DELETE'}); loadUsers(); }
 
 // ── Calendar ──
-let calYear, calMonth;
+let calYear, calMonth, gcalConnected = false;
 {
   const now = new Date();
   calYear = now.getFullYear();
@@ -2803,7 +2818,23 @@ function calNav(delta) { calMonth += delta; if (calMonth < 0) { calMonth = 11; c
 function calGoToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); loadCalendar(); }
 
 async function loadCalendar() {
-  const items = await api(`/lists/expirations?month=${calMonth + 1}&year=${calYear}`);
+  const [items, gcalStatus] = await Promise.all([
+    api(`/lists/expirations?month=${calMonth + 1}&year=${calYear}`),
+    api('/gcal/status').catch(() => ({ connected: false, reason: 'error' })),
+  ]);
+
+  // Update GCal connect bar
+  gcalConnected = gcalStatus.connected;
+  const gcalBar = document.getElementById('gcal-bar');
+  if (gcalStatus.reason !== 'not_configured') {
+    gcalBar.style.display = 'flex';
+    document.getElementById('gcal-bar-dot').classList.toggle('connected', gcalConnected);
+    document.getElementById('gcal-bar-text').textContent = gcalConnected ? 'Google Calendar connected' : 'Google Calendar not connected';
+    document.getElementById('gcal-connect-btn').style.display = gcalConnected ? 'none' : '';
+    document.getElementById('gcal-disconnect-btn').style.display = gcalConnected ? '' : 'none';
+    document.getElementById('gcal-legend-item').style.display = gcalConnected ? '' : 'none';
+  }
+
   const title = new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   document.getElementById('cal-title').textContent = title;
 
@@ -2811,14 +2842,16 @@ async function loadCalendar() {
   const soonThreshold = new Date(today); soonThreshold.setDate(soonThreshold.getDate() + 3);
 
   const byDate = {};
-  items.forEach(i => {
-    const d = i.expiration_date;
-    if (!d) return;
-    (byDate[d] = byDate[d] || []).push(i);
-  });
+  items.forEach(i => { const d = i.expiration_date; if (!d) return; (byDate[d] = byDate[d] || []).push(i); });
+
+  let gcalEvents = [];
+  if (gcalConnected) {
+    gcalEvents = await api(`/gcal/events?month=${calMonth + 1}&year=${calYear}`).catch(() => []);
+  }
+  const gcalByDate = {};
+  gcalEvents.forEach(e => { if (e.date) (gcalByDate[e.date] = gcalByDate[e.date] || []).push(e); });
 
   const firstDay = new Date(calYear, calMonth, 1);
-  const lastDay = new Date(calYear, calMonth + 1, 0);
   let startDow = firstDay.getDay();
   if (startDow === 0) startDow = 7;
   const startDate = new Date(firstDay);
@@ -2827,38 +2860,109 @@ async function loadCalendar() {
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   let html = days.map(d => `<div class="cal-header">${d}</div>`).join('');
 
-  const maxCells = 42;
   const cur = new Date(startDate);
-  for (let c = 0; c < maxCells; c++) {
+  for (let c = 0; c < 42; c++) {
     const iso = cur.toISOString().slice(0, 10);
     const isThisMonth = cur.getMonth() === calMonth;
     const isToday = cur.getTime() === today.getTime();
     const classes = ['cal-cell'];
     if (!isThisMonth) classes.push('other-month');
     if (isToday) classes.push('today');
+    if (gcalConnected) classes.push('cal-cell-clickable');
 
-    html += `<div class="${classes.join(' ')}"><div class="cal-day">${cur.getDate()}</div>`;
+    const cellClick = gcalConnected ? ` onclick="gcalCellClick(event,'${iso}')"` : '';
+    html += `<div class="${classes.join(' ')}"${cellClick}><div class="cal-day">${cur.getDate()}</div>`;
 
     const dayItems = byDate[iso] || [];
-    const maxShow = 3;
-    dayItems.slice(0, maxShow).forEach(i => {
+    dayItems.slice(0, 3).forEach(i => {
       const expDate = new Date(i.expiration_date + 'T00:00:00');
       let cls = 'ok';
       if (expDate < today) cls = 'expired';
       else if (expDate <= soonThreshold) cls = 'soon';
       const icon = itemDisplayIcon(i.library_item);
       const name = i.library_item?.name || '?';
-      html += `<div class="cal-item ${cls}" title="${name} — ${i.quantity} ${i.unit}${i.status === 'purchased' ? ' (purchased)' : ''}">${icon} ${name}</div>`;
+      html += `<div class="cal-item ${cls}" onclick="event.stopPropagation()" title="${name} — ${i.quantity} ${i.unit}${i.status === 'purchased' ? ' (purchased)' : ''}">${icon} ${name}</div>`;
     });
-    if (dayItems.length > maxShow) {
-      html += `<div class="cal-more">+${dayItems.length - maxShow} more</div>`;
-    }
+    if (dayItems.length > 3) html += `<div class="cal-more" onclick="event.stopPropagation()">+${dayItems.length - 3} more</div>`;
+
+    (gcalByDate[iso] || []).forEach(e => {
+      const safeTitle = e.title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const timeStr = e.start_time ? ` ${e.start_time}` : '';
+      html += `<div class="cal-item gcal" onclick="event.stopPropagation();gcalDeleteEvent('${e.id}','${safeTitle}')" title="${safeTitle}${timeStr}">📅 ${safeTitle}</div>`;
+    });
 
     html += '</div>';
     cur.setDate(cur.getDate() + 1);
   }
 
   document.getElementById('cal-grid').innerHTML = html;
+}
+
+// ── Google Calendar ──
+async function gcalConnect() {
+  try {
+    const { url } = await api('/gcal/auth-url');
+    window.location.href = url;
+  } catch(e) { toast(e.message || 'Failed to get auth URL'); }
+}
+
+async function gcalDisconnect() {
+  if (!confirm('Disconnect Google Calendar?')) return;
+  await api('/gcal/disconnect', { method: 'DELETE' });
+  toast('Google Calendar disconnected');
+  loadCalendar();
+}
+
+function gcalCellClick(event, isoDate) {
+  openGcalNewEvent(isoDate);
+}
+
+function openGcalNewEvent(isoDate) {
+  modal('New Google Calendar Event',
+    `<div style="display:flex;flex-direction:column;gap:10px">
+      <input id="gcal-ev-title" placeholder="Event title" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border);font-size:1rem;background:var(--bg);color:var(--text);width:100%;box-sizing:border-box">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer">
+        <input type="checkbox" id="gcal-ev-allday" checked onchange="toggleGcalTime()"> All day
+      </label>
+      <div id="gcal-ev-time-row" style="display:none;gap:8px;align-items:center">
+        <input type="time" id="gcal-ev-start" value="09:00" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
+        <span>–</span>
+        <input type="time" id="gcal-ev-end" value="10:00" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
+      </div>
+      <div style="font-size:.8rem;color:var(--muted)">${isoDate}</div>
+    </div>`,
+    async () => {
+      const title = document.getElementById('gcal-ev-title').value.trim();
+      if (!title) { toast('Enter a title'); return; }
+      const allDay = document.getElementById('gcal-ev-allday').checked;
+      const payload = { title, date: isoDate, all_day: allDay };
+      if (!allDay) {
+        payload.start_time = document.getElementById('gcal-ev-start').value;
+        payload.end_time = document.getElementById('gcal-ev-end').value;
+      }
+      try {
+        await api('/gcal/events', { method: 'POST', body: JSON.stringify(payload) });
+        closeModal();
+        loadCalendar();
+        toast('Event created');
+      } catch(e) { toast(e.message || 'Failed to create event'); }
+    }
+  );
+  setTimeout(() => document.getElementById('gcal-ev-title')?.focus(), 100);
+}
+
+function toggleGcalTime() {
+  const allDay = document.getElementById('gcal-ev-allday').checked;
+  document.getElementById('gcal-ev-time-row').style.display = allDay ? 'none' : 'flex';
+}
+
+async function gcalDeleteEvent(id, title) {
+  if (!confirm(`Delete "${title}"?`)) return;
+  try {
+    await api(`/gcal/events/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    loadCalendar();
+    toast('Event deleted');
+  } catch(e) { toast(e.message || 'Failed to delete event'); }
 }
 
 // ── Helpers ──
