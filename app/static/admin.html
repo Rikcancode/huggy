@@ -388,20 +388,113 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .gcal-bar .gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
 .gcal-bar .gcal-dot.connected { background: var(--green); }
 
-.recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.recipe-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: border-color .2s; }
-.recipe-card:hover { border-color: var(--accent); }
-.recipe-card h4 { margin: 0 0 6px; font-size: 1rem; }
-.recipe-card .recipe-meta { font-size: .8rem; color: var(--muted); }
-.recipe-card .recipe-stars { margin-top: 6px; }
+/* ── Recipe cards ── */
+.recipes-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+.recipes-toolbar input { flex: 1; min-width: 160px; }
+.tag-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tag-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px;
+  font-size: .78rem; cursor: pointer; color: var(--muted); transition: all .15s; white-space: nowrap; }
+.tag-btn:hover { border-color: var(--accent); color: var(--text); }
+.tag-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.recipe-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: border-color .2s, transform .15s; overflow: hidden; }
+.recipe-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.recipe-card:active { transform: scale(.98); }
+.recipe-card-img { width: 100%; height: 110px; object-fit: cover; background: var(--border); display: block; }
+.recipe-card-img-placeholder { width: 100%; height: 110px; background: var(--border); display: flex; align-items: center;
+  justify-content: center; font-size: 2.2rem; }
+.recipe-card-body { padding: 10px; }
+.recipe-card-name { font-size: .95rem; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+.recipe-card-meta { font-size: .75rem; color: var(--muted); margin-bottom: 6px; }
+.recipe-card-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.recipe-tag { background: var(--border); color: var(--muted); border-radius: 999px; font-size: .68rem; padding: 1px 7px; }
+.recipe-stars { font-size: .82rem; color: #d4a017; }
+/* Recipe detail overlay */
+.recipe-overlay { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column;
+  overflow: hidden; animation: overlay-slide-up .28s cubic-bezier(.2,0,.2,1) both; }
+.recipe-overlay-header { flex-shrink: 0; padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.recipe-overlay-title { font-family: 'Fredoka', sans-serif; font-size: 1.2rem; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recipe-overlay-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.recipe-overlay-img { width: 100%; height: 220px; object-fit: cover; background: var(--border); flex-shrink: 0; }
+.recipe-overlay-content { padding: 16px; }
+.recipe-overlay-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.recipe-overlay-tag { background: var(--accent); color: #fff; border-radius: 999px; font-size: .75rem; padding: 3px 10px; }
+.portions-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+.portions-label { font-size: .85rem; color: var(--muted); flex: 1; }
+.portions-stepper { display: flex; align-items: center; gap: 8px; }
+.portions-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; }
+.portions-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.portions-val { font-size: 1.1rem; font-weight: 700; min-width: 32px; text-align: center; }
+.recipe-overlay-ings { font-size: .9rem; margin: 4px 0 16px; }
+.recipe-overlay-ings li { padding: 4px 0; border-bottom: 1px solid var(--border); }
+.recipe-overlay-directions { font-size: .88rem; line-height: 1.6; white-space: pre-wrap; color: var(--text); }
+.recipe-overlay-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid var(--border); }
+/* Meal plan week grid */
+.mealplan-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 8px; }
+@media (max-width: 640px) { .mealplan-week-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 400px) { .mealplan-week-grid { grid-template-columns: repeat(2, 1fr); } }
+.mealplan-day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px; cursor: pointer; transition: border-color .2s; min-height: 100px; overflow: hidden; }
+.mealplan-day-card:hover { border-color: var(--accent); }
+.mealplan-day-card.today { border-color: var(--accent); border-width: 2px; }
+.mealplan-day-card.empty { opacity: .7; }
+.mealplan-day-name { font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+.mealplan-day-date { font-size: .7rem; color: var(--muted); margin-bottom: 6px; }
+.mealplan-day-thumb { width: 100%; height: 54px; object-fit: cover; border-radius: 4px; margin-bottom: 6px; }
+.mealplan-day-meal { font-size: .8rem; font-weight: 600; line-height: 1.3; }
+.mealplan-day-servings { font-size: .7rem; color: var(--muted); margin-top: 3px; }
+.mealplan-day-actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+/* Recipe picker modal */
+.recipe-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;
+  max-height: 55vh; overflow-y: auto; padding: 4px 0; -webkit-overflow-scrolling: touch; }
+.recipe-picker-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px; cursor: pointer; transition: border-color .15s; }
+.recipe-picker-card:hover, .recipe-picker-card.selected { border-color: var(--accent); background: rgba(108,99,255,.08); }
+.recipe-picker-card img { width: 100%; height: 70px; object-fit: cover; border-radius: 4px; margin-bottom: 6px; background: var(--border); }
+.recipe-picker-card-placeholder { width: 100%; height: 70px; background: var(--border); border-radius: 4px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+.recipe-picker-name { font-size: .82rem; font-weight: 600; line-height: 1.3; }
+/* Day picker inside recipe overlay */
+.day-picker { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 12px 0; }
+.day-picker-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 4px; text-align: center; cursor: pointer; transition: all .15s; }
+.day-picker-btn:hover { border-color: var(--accent); }
+.day-picker-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.day-picker-btn .dp-name { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.day-picker-btn.active .dp-name { color: rgba(255,255,255,.8); }
+.day-picker-btn .dp-date { font-size: .7rem; color: var(--muted); }
+.day-picker-btn.active .dp-date { color: rgba(255,255,255,.7); }
+.day-picker-btn .dp-meal { font-size: .65rem; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Kid schedule */
+.kid-schedule-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+@media (max-width: 640px) { .kid-schedule-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 400px) { .kid-schedule-grid { grid-template-columns: repeat(2, 1fr); } }
+.kid-day-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.kid-day-header { background: var(--border); padding: 4px 8px; font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.kid-slot { padding: 6px 8px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; }
+.kid-slot:last-child { border-bottom: none; }
+.kid-slot:hover { background: rgba(108,99,255,.08); }
+.kid-slot-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+.kid-slot-user { font-size: .78rem; font-weight: 600; }
+.kid-slot-user.empty { color: var(--muted); font-weight: normal; font-style: italic; }
+.kid-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 4px; }
+/* Import recipe overlay */
+.import-overlay { position: fixed; inset: 0; z-index: 350; background: var(--bg); display: flex; flex-direction: column;
+  overflow: hidden; animation: overlay-slide-up .28s cubic-bezier(.2,0,.2,1) both; }
+.import-overlay-header { flex-shrink: 0; padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.import-overlay-body { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch;
+  padding-bottom: max(24px, env(safe-area-inset-bottom)); }
 .recipe-stars span { color: #d4a017; }
 .recipe-detail-ingredients { font-size: .9rem; margin: 12px 0; }
 .recipe-detail-ingredients li { margin: 4px 0; }
-.mealplan-grid { display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
-.mealplan-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.mealplan-row label { min-width: 88px; font-weight: 600; color: var(--muted); }
-.mealplan-row input { flex: 1; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border); }
-.mealplan-row input:focus { outline: none; border-color: var(--accent); }
 .cal-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
 .cal-dot-expired { background: var(--red); }
 .cal-dot-soon { background: var(--orange); }
@@ -612,9 +705,23 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
   <!-- RECIPES -->
   <div id="panel-recipes" class="panel">
-    <div class="toolbar">
-      <input id="recipes-search" placeholder="Search recipes…" oninput="loadRecipes()" style="max-width:280px">
-      <button type="button" class="btn-sm" id="recipes-sync-obsidian-folder" title="Force sync all recipes from Obsidian folder">Sync all from Obsidian</button>
+    <div class="recipes-toolbar">
+      <input id="recipes-search" placeholder="Search recipes…" oninput="loadRecipes()" style="flex:1;min-width:140px">
+      <button type="button" class="btn-primary btn-sm" onclick="openImportRecipeModal()">+ Import from URL</button>
+      <button type="button" class="btn-sm" id="recipes-sync-obsidian-folder" title="Force sync all recipes from Obsidian folder">Sync Obsidian</button>
+    </div>
+    <div class="tag-filter" id="tag-filter">
+      <button class="tag-btn active" data-tag="" onclick="setTagFilter(this,'')">All</button>
+      <button class="tag-btn" data-tag="meat" onclick="setTagFilter(this,'meat')">🥩 Meat</button>
+      <button class="tag-btn" data-tag="fish" onclick="setTagFilter(this,'fish')">🐟 Fish</button>
+      <button class="tag-btn" data-tag="rice" onclick="setTagFilter(this,'rice')">🍚 Rice</button>
+      <button class="tag-btn" data-tag="pasta" onclick="setTagFilter(this,'pasta')">🍝 Pasta</button>
+      <button class="tag-btn" data-tag="dessert" onclick="setTagFilter(this,'dessert')">🍰 Dessert</button>
+      <button class="tag-btn" data-tag="snack" onclick="setTagFilter(this,'snack')">🥨 Snack</button>
+      <button class="tag-btn" data-tag="salad" onclick="setTagFilter(this,'salad')">🥗 Salad</button>
+      <button class="tag-btn" data-tag="breakfast" onclick="setTagFilter(this,'breakfast')">🥞 Breakfast</button>
+      <button class="tag-btn" data-tag="lowfat" onclick="setTagFilter(this,'lowfat')">🥦 Low fat</button>
+      <button class="tag-btn" data-tag="fast" onclick="setTagFilter(this,'fast')">⚡ Fast</button>
     </div>
     <div id="recipes-list" class="recipes-grid"></div>
   </div>
@@ -622,15 +729,20 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   <!-- MEAL PLAN -->
   <div id="panel-mealplan" class="panel">
     <div class="toolbar">
-      <label>Week</label>
-      <input type="week" id="mealplan-week" aria-label="Select week" style="min-width:140px">
       <button class="btn-sm" onclick="mealPlanPrevWeek()">&larr;</button>
-      <button class="btn-sm" onclick="mealPlanNextWeek()">→</button>
-      <button class="btn-sm" onclick="mealPlanGoThisWeek()">This week</button>
-      <button type="button" class="btn-primary btn-sm" id="mealplan-add-week-to-list">Add week to list</button>
+      <span id="mealplan-week-label" style="font-weight:600;min-width:120px;text-align:center"></span>
+      <button class="btn-sm" onclick="mealPlanNextWeek()">&rarr;</button>
+      <button class="btn-sm" onclick="mealPlanGoThisWeek()">Today</button>
+      <button type="button" class="btn-primary btn-sm" id="mealplan-add-week-to-list" style="margin-left:auto">Add week to list</button>
     </div>
-    <p style="color:var(--muted);margin:8px 0 12px">Evening meals Monday–Friday. Type and blur to save. Pick a recipe from Recipes to link; then add ingredients to list.</p>
-    <div id="mealplan-content" class="mealplan-grid"></div>
+    <div id="mealplan-content" class="mealplan-week-grid"></div>
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-family:'Fredoka',sans-serif;font-size:1.05rem;font-weight:600">🚗 Delivery & Pickup</span>
+        <span style="font-size:.8rem;color:var(--muted)">Who handles school runs this week</span>
+      </div>
+      <div id="kid-schedule-content" class="kid-schedule-grid"></div>
+    </div>
   </div>
 
   <!-- RECENT PURCHASES -->
@@ -2268,9 +2380,6 @@ function initSwipeRows(container) {
   });
 }
 
-// ── Meal Plan (Mon–Fri evening meals) ──
-let _mealPlanYear = null, _mealPlanWeek = null;
-
 function getISOWeek(d) {
   const dt = new Date(d);
   dt.setHours(0, 0, 0, 0);
@@ -2281,106 +2390,212 @@ function getISOWeek(d) {
   return [thursday.getFullYear(), w];
 }
 
+// ── Meal plan state ──
+let _mealPlanYear = null, _mealPlanWeek = null;
+const _DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 function mealPlanGetYw() {
-  const inp = document.getElementById('mealplan-week');
-  if (!inp?.value) return getISOWeek(new Date());
-  const [y, w] = inp.value.split('-W').map((x, i) => i === 0 ? parseInt(x, 10) : parseInt(x, 10));
-  return [y, w];
+  if (_mealPlanYear && _mealPlanWeek) return [_mealPlanYear, _mealPlanWeek];
+  return getISOWeek(new Date());
 }
 
-function mealPlanSetInput(y, w) {
-  const inp = document.getElementById('mealplan-week');
-  if (inp) inp.value = `${y}-W${String(w).padStart(2, '0')}`;
-  _mealPlanYear = y;
-  _mealPlanWeek = w;
+function mealPlanSetYw(y, w) {
+  _mealPlanYear = y; _mealPlanWeek = w;
+  const lbl = document.getElementById('mealplan-week-label');
+  if (lbl) lbl.textContent = `Week ${w} · ${y}`;
 }
 
 function mealPlanPrevWeek() {
-  const [y, w] = mealPlanGetYw();
-  if (w <= 1) {
-    mealPlanSetInput(y - 1, 52);
-  } else {
-    mealPlanSetInput(y, w - 1);
-  }
-  loadMealPlan();
+  let [y, w] = mealPlanGetYw();
+  if (w <= 1) { y--; w = 52; } else { w--; }
+  mealPlanSetYw(y, w); loadMealPlan();
 }
-
 function mealPlanNextWeek() {
-  const [y, w] = mealPlanGetYw();
-  if (w >= 52) {
-    mealPlanSetInput(y + 1, 1);
-  } else {
-    mealPlanSetInput(y, w + 1);
-  }
-  loadMealPlan();
+  let [y, w] = mealPlanGetYw();
+  if (w >= 52) { y++; w = 1; } else { w++; }
+  mealPlanSetYw(y, w); loadMealPlan();
 }
-
 function mealPlanGoThisWeek() {
   const [y, w] = getISOWeek(new Date());
-  mealPlanSetInput(y, w);
-  loadMealPlan();
+  mealPlanSetYw(y, w); loadMealPlan();
+}
+
+function _mealDayDate(year, week, day) {
+  // ISO week day: day=1 is Monday
+  const d = new Date(year, 0, 4); // Jan 4 always in week 1
+  const dayOfWeek = d.getDay() || 7; // Mon=1
+  d.setDate(d.getDate() - (dayOfWeek - 1) + (week - 1) * 7 + (day - 1));
+  return d;
 }
 
 async function loadMealPlan() {
   const [y, w] = mealPlanGetYw();
-  mealPlanSetInput(y, w);
-  const entries = await api(`/meal-plan?year=${y}&week=${w}`);
-  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  mealPlanSetYw(y, w);
+  const [entries] = await Promise.all([
+    api(`/meal-plan?year=${y}&week=${w}`),
+    allRecipes.length ? Promise.resolve() : api('/recipes').then(r => { allRecipes = r; }),
+  ]);
   const byDay = Object.fromEntries(entries.map(e => [e.day, e]));
+  const today = new Date(); today.setHours(0,0,0,0);
   let html = '';
-  for (let day = 1; day <= 5; day++) {
+  for (let day = 1; day <= 7; day++) {
     const e = byDay[day] || { id: 0, year: y, week: w, day, dinner: '', recipe_id: null, recipe_servings: null };
-    const name = dayNames[day - 1];
-    const rid = e.recipe_id != null ? e.recipe_id : '';
-    const serv = e.recipe_servings != null ? e.recipe_servings : '';
-    const recipeInfo = rid ? ` <span class="recipe-meta" style="font-size:.8rem;color:var(--muted)">· ${serv} servings</span> <button type="button" class="btn-sm" onclick="addMealPlanDayToList(${y},${w},${day})">Add to list</button>` : '';
-    html += `<div class="mealplan-row" data-year="${y}" data-week="${w}" data-day="${day}" data-id="${e.id || ''}" data-recipe-id="${rid}" data-recipe-servings="${serv}">
-      <label>${name}</label>
-      <div style="flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <input type="text" value="${escapeHtml(e.dinner || '')}" placeholder="Evening meal or pick recipe…"
-          data-year="${y}" data-week="${w}" data-day="${day}" data-id="${e.id || ''}"
-          onchange="saveMealPlanSlot(this)" onblur="saveMealPlanSlot(this)" style="flex:1;min-width:140px">
-        <button type="button" class="btn-sm" onclick="pickRecipeForSlot(${y},${w},${day})">Pick recipe</button>
-        ${recipeInfo}
-      </div>
+    const dayDate = _mealDayDate(y, w, day);
+    const isToday = dayDate.toDateString() === today.toDateString();
+    const dateStr = dayDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const dayName = _DAY_NAMES[day - 1];
+    const rid = e.recipe_id || '';
+    const serv = e.recipe_servings || '';
+    const recipe = rid ? allRecipes.find(r => r.id === rid) : null;
+    const thumbHtml = recipe?.thumbnail_url
+      ? `<img class="mealplan-day-thumb" src="${escapeHtml(recipe.thumbnail_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '';
+    const mealText = e.dinner ? escapeHtml(e.dinner) : '<span style="color:var(--muted);font-style:italic">Tap to plan</span>';
+    const addBtn = rid ? `<button class="btn-sm" style="font-size:.7rem;padding:3px 7px" onclick="event.stopPropagation();addMealPlanDayToList(${y},${w},${day})">+List</button>` : '';
+    html += `<div class="mealplan-day-card${isToday ? ' today' : ''}${!e.dinner ? ' empty' : ''}"
+      data-year="${y}" data-week="${w}" data-day="${day}" data-recipe-id="${rid}" data-recipe-servings="${serv}"
+      onclick="openMealPlanDayModal(${y},${w},${day})">
+      <div class="mealplan-day-name">${dayName}</div>
+      <div class="mealplan-day-date">${dateStr}</div>
+      ${thumbHtml}
+      <div class="mealplan-day-meal">${mealText}</div>
+      ${serv ? `<div class="mealplan-day-servings">${serv} servings</div>` : ''}
+      ${addBtn ? `<div class="mealplan-day-actions">${addBtn}</div>` : ''}
     </div>`;
   }
   document.getElementById('mealplan-content').innerHTML = html;
+  loadKidSchedule();
 }
 
-async function pickRecipeForSlot(y, w, day) {
+async function openMealPlanDayModal(y, w, day) {
   if (!allRecipes.length) allRecipes = await api('/recipes');
-  const names = allRecipes.map(r => r.name);
-  const chosen = prompt('Recipe name (or leave blank to clear):\n' + names.slice(0, 15).join('\n') + (names.length > 15 ? '\n…' : ''));
-  if (chosen === null) return;
-  const recipe = allRecipes.find(r => r.name === chosen.trim());
-  const row = document.querySelector(`.mealplan-row[data-year="${y}"][data-week="${w}"][data-day="${day}"]`);
-  if (!recipe) {
-    if (row) {
-      row.dataset.recipeId = '';
-      row.dataset.recipeServings = '';
-      const inp = row.querySelector('input');
-      if (inp) { inp.value = chosen.trim(); saveMealPlanSlot(inp); }
-    }
-    return;
+  const entries = await api(`/meal-plan?year=${y}&week=${w}`);
+  const existing = entries.find(e => e.day === day);
+  const dayDate = _mealDayDate(y, w, day);
+  const dateStr = dayDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  const currentRecipeId = existing?.recipe_id || null;
+  const currentServings = existing?.recipe_servings || 4;
+
+  let _pickerTag = '';
+  let _pickerSearch = '';
+  let _pickerSelected = currentRecipeId
+    ? { id: currentRecipeId, name: allRecipes.find(r => r.id === currentRecipeId)?.name || '', servings: currentServings }
+    : null;
+
+  function _pickerCards() {
+    const recipes = allRecipes.filter(r => {
+      const matchQ = !_pickerSearch || r.name.toLowerCase().includes(_pickerSearch.toLowerCase());
+      const matchT = !_pickerTag || (r.tags||[]).some(t => t.toLowerCase() === _pickerTag);
+      return matchQ && matchT;
+    });
+    if (!recipes.length) return '<p style="color:var(--muted);padding:12px">No recipes found</p>';
+    return recipes.map(r => {
+      const sel = _pickerSelected?.id === r.id ? ' selected' : '';
+      const thumb = r.thumbnail_url
+        ? `<img src="${escapeHtml(r.thumbnail_url)}" alt="" onerror="this.style.display='none'">`
+        : `<div class="recipe-picker-card-placeholder">${_recipeEmoji(r)}</div>`;
+      const tags = (r.tags||[]).slice(0,2).map(t=>`<span class="recipe-tag">${t}</span>`).join('');
+      return `<div class="recipe-picker-card${sel}" onclick="_mpPickCard(${r.id},'${escapeHtml(r.name).replace(/'/g,"\\'")}',${r.default_servings})">
+        ${thumb}<div class="recipe-picker-name">${escapeHtml(r.name)}</div>
+        ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:3px">${tags}</div>` : ''}</div>`;
+    }).join('');
   }
-  const servings = prompt('Servings for this meal:', String(recipe.default_servings));
-  const serv = servings ? parseInt(servings, 10) : recipe.default_servings;
-  await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
-    method: 'PUT',
-    body: JSON.stringify({ dinner: recipe.name, recipe_id: recipe.id, recipe_servings: serv }),
-  });
-  toast('Updated');
-  loadMealPlan();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'recipe-overlay';
+  overlay.id = 'mp-day-overlay';
+  const allTags = ['meat','fish','rice','pasta','dessert','snack','salad','breakfast','lowfat','fast'];
+  const tagFilterHtml = `<button class="tag-btn active" onclick="_mpTagFilter(this,'')" style="font-size:.72rem;padding:3px 10px">All</button>`
+    + allTags.map(t=>`<button class="tag-btn" onclick="_mpTagFilter(this,'${t}')" style="font-size:.72rem;padding:3px 10px">${t}</button>`).join('');
+
+  overlay.innerHTML = `
+    <div class="recipe-overlay-header">
+      <button class="add-overlay-close" onclick="document.getElementById('mp-day-overlay').remove()">✕</button>
+      <span class="recipe-overlay-title">Pick recipe for ${_DAY_NAMES_FULL[day-1]}</span>
+    </div>
+    <div style="flex-shrink:0;padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border)">
+      <input id="mp-picker-search" placeholder="Search recipe…" style="width:100%;margin-bottom:8px"
+        oninput="_pickerSearch=this.value;document.getElementById('mp-picker-grid').innerHTML=_pickerCards()">
+      <div class="tag-filter" style="margin-bottom:0">${tagFilterHtml}</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:10px 14px;-webkit-overflow-scrolling:touch">
+      <div class="recipe-picker-grid" id="mp-picker-grid">${_pickerCards()}</div>
+    </div>
+    <div style="flex-shrink:0;padding:12px 14px;background:var(--surface);border-top:1px solid var(--border)">
+      <div id="mp-selected-bar" style="margin-bottom:10px;font-size:.88rem;color:var(--muted)">
+        ${_pickerSelected ? `Selected: <strong>${escapeHtml(_pickerSelected.name)}</strong>` : 'No recipe selected'}
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="portions-row" style="flex:1;margin:0;padding:8px 12px">
+          <span class="portions-label">Servings</span>
+          <div class="portions-stepper">
+            <button class="portions-btn" type="button" onclick="_mpServAdj(-1)">−</button>
+            <span class="portions-val" id="mp-serv-val">${currentServings}</span>
+            <button class="portions-btn" type="button" onclick="_mpServAdj(1)">+</button>
+          </div>
+        </div>
+        <button type="button" class="btn-primary" id="mp-day-save" style="min-height:44px;padding:10px 18px">Save</button>
+        <button type="button" class="btn-sm" id="mp-day-clear" style="color:var(--red);min-height:44px">Clear</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  window._pickerCards = _pickerCards;
+  window._mpTagFilter = (btn, tag) => {
+    overlay.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _pickerTag = tag;
+    document.getElementById('mp-picker-grid').innerHTML = _pickerCards();
+  };
+  window._mpPickCard = (rid, rname, defaultServ) => {
+    _pickerSelected = { id: rid, name: rname, servings: parseInt(document.getElementById('mp-serv-val')?.textContent || defaultServ) };
+    overlay.querySelectorAll('.recipe-picker-card').forEach(c => c.classList.remove('selected'));
+    overlay.querySelectorAll(`.recipe-picker-card`).forEach(c => {
+      if (c.getAttribute('onclick')?.includes(`_mpPickCard(${rid},`)) c.classList.add('selected');
+    });
+    document.getElementById('mp-selected-bar').innerHTML = `Selected: <strong>${escapeHtml(rname)}</strong>`;
+  };
+  window._mpServAdj = (delta) => {
+    const el = document.getElementById('mp-serv-val');
+    const v = Math.max(1, (parseInt(el.textContent) || 1) + delta);
+    el.textContent = v;
+    if (_pickerSelected) _pickerSelected.servings = v;
+  };
+
+  document.getElementById('mp-day-save').onclick = async () => {
+    const serv = parseInt(document.getElementById('mp-serv-val')?.textContent || 4);
+    await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        dinner: _pickerSelected ? _pickerSelected.name : '',
+        recipe_id: _pickerSelected ? _pickerSelected.id : null,
+        recipe_servings: _pickerSelected ? serv : null,
+      }),
+    });
+    toast('Saved');
+    overlay.remove();
+    loadMealPlan();
+  };
+  document.getElementById('mp-day-clear').onclick = async () => {
+    await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
+      method: 'PUT', body: JSON.stringify({ dinner: '', recipe_id: null, recipe_servings: null }),
+    });
+    toast('Cleared');
+    overlay.remove();
+    loadMealPlan();
+  };
 }
 
 async function addMealPlanDayToList(y, w, day) {
-  const row = document.querySelector(`.mealplan-row[data-year="${y}"][data-week="${w}"][data-day="${day}"]`);
-  const recipeId = row?.dataset.recipeId;
-  const servings = row?.dataset.recipeServings || '4';
+  const card = document.querySelector(`.mealplan-day-card[data-year="${y}"][data-week="${w}"][data-day="${day}"]`);
+  const recipeId = card?.dataset.recipeId;
+  const servings = card?.dataset.recipeServings || '4';
   if (!recipeId) { toast('No recipe linked to this day'); return; }
   const listId = document.getElementById('list-select')?.value || (await api('/lists'))[0]?.id;
   if (!listId) { toast('Create a list first'); return; }
+  const dayDate = _mealDayDate(y, w, day);
+  const expDate = dayDate.toISOString().split('T')[0];
   try {
     const res = await api(`/recipes/${recipeId}/add-to-list?list_id=${listId}&servings=${servings}`);
     toast(`Added ${res.added.length} ingredients`);
@@ -2388,108 +2603,388 @@ async function addMealPlanDayToList(y, w, day) {
   } catch (e) { toast(e.message || 'Failed'); }
 }
 
-async function saveMealPlanSlot(inputEl) {
-  const y = inputEl.dataset.year, w = inputEl.dataset.week, day = inputEl.dataset.day;
-  const dinner = (inputEl.value || '').trim();
-  const row = inputEl.closest('.mealplan-row');
-  const recipeId = row?.dataset.recipeId || '';
-  const servings = row?.dataset.recipeServings || '';
-  await api(`/meal-plan/slot?year=${y}&week=${w}&day=${day}`, {
-    method: 'PUT',
-    body: JSON.stringify({ dinner, recipe_id: recipeId ? parseInt(recipeId, 10) : null, recipe_servings: servings ? parseInt(servings, 10) : null }),
+// Legacy stub – no longer used, kept so old event listeners don't crash
+async function saveMealPlanSlot(inputEl) {}
+
+// ── Kid Schedule ──
+let _kidScheduleData = [];
+async function loadKidSchedule() {
+  const [y, w] = mealPlanGetYw();
+  try {
+    _kidScheduleData = await api(`/kid-schedule?year=${y}&week=${w}`);
+  } catch (_) { _kidScheduleData = []; }
+  renderKidSchedule(y, w);
+}
+
+function renderKidSchedule(y, w) {
+  const el = document.getElementById('kid-schedule-content');
+  if (!el) return;
+  const byKey = {};
+  _kidScheduleData.forEach(s => { byKey[`${s.day}-${s.slot}`] = s; });
+  let html = '';
+  for (let day = 1; day <= 7; day++) {
+    const dayName = _DAY_NAMES[day - 1];
+    const morning = byKey[`${day}-morning`];
+    const afternoon = byKey[`${day}-afternoon`];
+    html += `<div class="kid-day-col">
+      <div class="kid-day-header">${dayName}</div>
+      ${_kidSlotHtml(morning, day, 'morning', y, w)}
+      ${_kidSlotHtml(afternoon, day, 'afternoon', y, w)}
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function _kidSlotHtml(slot, day, slotType, y, w) {
+  const icon = slotType === 'morning' ? '🌅' : '🌆';
+  const label = slotType === 'morning' ? 'Drop-off' : 'Pick-up';
+  const userName = slot?.assigned_user_name;
+  const avatar = slot?.assigned_user_avatar;
+  const userHtml = userName
+    ? `${avatar ? `<img class="kid-avatar" src="${escapeHtml(avatar)}" alt="">` : ''}<span>${escapeHtml(userName)}</span>`
+    : `<span class="empty">—</span>`;
+  return `<div class="kid-slot" onclick="openKidSlotModal(${y},${w},${day},'${slotType}')">
+    <div class="kid-slot-label">${icon} ${label}</div>
+    <div class="kid-slot-user">${userHtml}</div>
+    ${slot?.notes ? `<div style="font-size:.65rem;color:var(--muted);margin-top:2px">${escapeHtml(slot.notes)}</div>` : ''}
+  </div>`;
+}
+
+async function openKidSlotModal(y, w, day, slotType) {
+  const users = await api('/users');
+  const existing = _kidScheduleData.find(s => s.day === day && s.slot === slotType);
+  const slotLabel = slotType === 'morning' ? 'Drop-off' : 'Pick-up';
+  const body = `
+    <p style="color:var(--muted);margin-bottom:12px;font-size:.9rem">${_DAY_NAMES_FULL[day-1]} · ${slotLabel}</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div class="kid-user-option${!existing?.assigned_user_id ? ' selected' : ''}"
+        data-uid="" onclick="kidSlotSelectUser(this)"
+        style="cursor:pointer;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);font-size:.9rem">
+        — Nobody
+      </div>
+      ${users.filter(u => u.is_active !== false).map(u => `
+        <div class="kid-user-option${existing?.assigned_user_id === u.id ? ' selected' : ''}"
+          data-uid="${u.id}" onclick="kidSlotSelectUser(this)"
+          style="cursor:pointer;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:.9rem">
+          ${u.avatar ? `<img src="${escapeHtml(u.avatar)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" alt="">` : ''}
+          ${escapeHtml(u.name)}
+        </div>`).join('')}
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:.8rem;color:var(--muted)">Notes (optional)</label>
+      <input id="kid-slot-notes" value="${escapeHtml(existing?.notes || '')}" placeholder="e.g. pick up at 3pm" style="width:100%;margin-top:4px">
+    </div>
+    <div class="modal-actions"><button type="button" class="btn-primary" id="kid-slot-save">Save</button></div>`;
+  modal(`${slotLabel} – ${_DAY_NAMES_FULL[day-1]}`, body, () => {});
+  let selectedUid = existing?.assigned_user_id || null;
+  window.kidSlotSelectUser = (el) => {
+    document.querySelectorAll('.kid-user-option').forEach(x => {
+      x.style.borderColor = 'var(--border)';
+      x.style.background = '';
+    });
+    el.style.borderColor = 'var(--accent)';
+    el.style.background = 'rgba(108,99,255,.1)';
+    selectedUid = el.dataset.uid ? parseInt(el.dataset.uid) : null;
+  };
+  // Highlight current selection
+  document.querySelectorAll('.kid-user-option').forEach(el => {
+    const uid = el.dataset.uid ? parseInt(el.dataset.uid) : null;
+    if (uid === selectedUid) { el.style.borderColor = 'var(--accent)'; el.style.background = 'rgba(108,99,255,.1)'; }
   });
+  document.getElementById('kid-slot-save').onclick = async () => {
+    const notes = document.getElementById('kid-slot-notes')?.value?.trim() || null;
+    await api(`/kid-schedule/slot?year=${y}&week=${w}&day=${day}&slot=${slotType}`, {
+      method: 'PUT',
+      body: JSON.stringify({ assigned_user_id: selectedUid, notes }),
+    });
+    toast('Saved');
+    closeModal();
+    loadKidSchedule();
+  };
 }
 
 // ── Recipes ──
 let allRecipes = [];
+let _activeTag = '';
+
+function setTagFilter(btn, tag) {
+  document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _activeTag = tag;
+  loadRecipes();
+}
+
+function _recipeEmoji(r) {
+  const tagMap = { meat:'🥩', fish:'🐟', rice:'🍚', pasta:'🍝', dessert:'🍰', snack:'🥨', salad:'🥗', breakfast:'🥞', lowfat:'🥦', fast:'⚡' };
+  for (const t of (r.tags || [])) { if (tagMap[t]) return tagMap[t]; }
+  return '🍽';
+}
+
 async function loadRecipes() {
   const q = document.getElementById('recipes-search')?.value?.trim() || '';
-  const url = q ? `/recipes?q=${encodeURIComponent(q)}` : '/recipes';
+  let url = '/recipes';
+  const params = [];
+  if (q) params.push(`q=${encodeURIComponent(q)}`);
+  if (_activeTag) params.push(`tag=${encodeURIComponent(_activeTag)}`);
+  if (params.length) url += '?' + params.join('&');
   allRecipes = await api(url);
   const listEl = document.getElementById('recipes-list');
   if (!listEl) return;
   if (!allRecipes.length) {
-    listEl.innerHTML = '<p style="color:var(--muted)">No recipes yet. Use "Sync all from Obsidian" to import recipes.</p>';
+    listEl.innerHTML = '<p style="color:var(--muted);padding:20px 0">No recipes yet. Use "Sync Obsidian" to import, or "+ Import from URL".</p>';
     return;
   }
   listEl.innerHTML = allRecipes.map(r => {
-    const stars = r.rating_avg != null ? '★'.repeat(Math.round(r.rating_avg)) + '☆'.repeat(5 - Math.round(r.rating_avg)) : '—';
-    return `<div class="recipe-card" data-recipe-id="${r.id}" onclick="showRecipeDetail(${r.id})">
-      <h4>${escapeHtml(r.name)}</h4>
-      <div class="recipe-meta">${r.default_servings} servings · ${(r.ingredients || []).length} ingredients</div>
-      <div class="recipe-stars" title="Rating">${stars}</div>
+    const stars = r.rating_avg != null ? '★'.repeat(Math.round(r.rating_avg)) + '☆'.repeat(5 - Math.round(r.rating_avg)) : '';
+    const img = r.thumbnail_url
+      ? `<img class="recipe-card-img" src="${escapeHtml(r.thumbnail_url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=\\'recipe-card-img-placeholder\\'>${_recipeEmoji(r)}</div>'">`
+      : `<div class="recipe-card-img-placeholder">${_recipeEmoji(r)}</div>`;
+    const tags = (r.tags || []).map(t => `<span class="recipe-tag">${escapeHtml(t)}</span>`).join('');
+    const sourceHtml = (r.source_url || r.source_path) ? `<div style="font-size:.68rem;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+      ${r.source_url ? `<a href="${escapeHtml(r.source_url)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">${new URL(r.source_url).hostname}</a>`
+      : escapeHtml(r.source_path || '')}</div>` : '';
+    return `<div class="recipe-card" data-recipe-id="${r.id}" onclick="openRecipeOverlay(${r.id})">
+      ${img}
+      <div class="recipe-card-body">
+        <div class="recipe-card-name">${escapeHtml(r.name)}</div>
+        ${sourceHtml}
+        <div class="recipe-card-meta">${r.default_servings} servings · ${(r.ingredients || []).length} ingredients${r.cooking_time_minutes ? ' · ' + r.cooking_time_minutes + ' min' : ''}</div>
+        ${stars ? `<div class="recipe-stars">${stars}</div>` : ''}
+        ${tags ? `<div class="recipe-card-tags">${tags}</div>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
 
-function recipeStarsWidget(current, recipeId) {
-  let html = '<span class="recipe-stars">';
-  for (let i = 1; i <= 5; i++) {
-    html += `<button type="button" class="btn-sm" style="padding:2px 4px;min-width:28px" onclick="rateRecipe(${recipeId}, ${i})" title="Rate ${i}">${i <= (current || 0) ? '★' : '☆'}</button>`;
+async function openRecipeOverlay(recipeId) {
+  const r = await api(`/recipes/${recipeId}`);
+  let portions = r.default_servings || 4;
+
+  function ingHtml(scaledPortions) {
+    const scale = scaledPortions / Math.max(1, r.default_servings);
+    return (r.ingredients || []).map(i => {
+      const qty = Math.round(i.quantity * scale * 100) / 100;
+      return `<li>${qty} ${escapeHtml(i.unit)} ${escapeHtml(i.name)}</li>`;
+    }).join('');
   }
-  html += '</span>';
-  return html;
+
+  const imgHtml = r.thumbnail_url
+    ? `<img class="recipe-overlay-img" src="${escapeHtml(r.thumbnail_url)}" alt="${escapeHtml(r.name)}" onerror="this.style.display='none'">`
+    : '';
+  const tagsHtml = (r.tags || []).map(t => `<span class="recipe-overlay-tag">${escapeHtml(t)}</span>`).join('');
+  const sourceHtml = r.source_url
+    ? `<a href="${escapeHtml(r.source_url)}" target="_blank" rel="noopener" style="font-size:.82rem;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:10px">
+        🔗 ${escapeHtml(new URL(r.source_url).hostname)}</a>`
+    : (r.source_path ? `<div style="font-size:.8rem;color:var(--muted);margin-bottom:10px">📝 ${escapeHtml(r.source_path)}</div>` : '');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'recipe-overlay';
+  overlay.id = 'recipe-overlay';
+  overlay.innerHTML = `
+    <div class="recipe-overlay-header">
+      <button class="add-overlay-close" onclick="document.getElementById('recipe-overlay').remove()">✕</button>
+      <span class="recipe-overlay-title">${escapeHtml(r.name)}</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm" onclick="openEditTagsModal(${r.id})">Tags</button>
+        <button class="btn-sm" style="color:var(--red)" onclick="confirmDeleteRecipe(${r.id})">Delete</button>
+      </div>
+    </div>
+    <div class="recipe-overlay-body">
+      ${imgHtml}
+      <div class="recipe-overlay-content">
+        ${tagsHtml ? `<div class="recipe-overlay-tags">${tagsHtml}</div>` : ''}
+        ${sourceHtml}
+        <div class="portions-row">
+          <span class="portions-label">Portions</span>
+          <div class="portions-stepper">
+            <button class="portions-btn" type="button" id="ro-portions-dec">−</button>
+            <span class="portions-val" id="ro-portions-val">${portions}</span>
+            <button class="portions-btn" type="button" id="ro-portions-inc">+</button>
+          </div>
+        </div>
+        <strong style="font-size:.9rem">Ingredients</strong>
+        <ul class="recipe-overlay-ings" id="ro-ings">${ingHtml(portions)}</ul>
+        ${r.directions ? `<strong style="font-size:.9rem">Directions</strong><div class="recipe-overlay-directions" style="margin-top:8px">${escapeHtml(r.directions)}</div>` : ''}
+        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <span style="font-size:.85rem;color:var(--muted)">Your rating:</span>
+          <span id="ro-stars">${_starsWidget(r.user_rating, r.id)}</span>
+        </div>
+        <div class="recipe-overlay-actions">
+          <button type="button" class="btn-primary btn-sm" id="ro-meal-plan-btn">Add to meal plan</button>
+          <button type="button" class="btn-sm" id="ro-list-btn">Add ingredients to list</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  document.getElementById('ro-portions-dec').onclick = () => {
+    portions = Math.max(1, portions - 1);
+    document.getElementById('ro-portions-val').textContent = portions;
+    document.getElementById('ro-ings').innerHTML = ingHtml(portions);
+  };
+  document.getElementById('ro-portions-inc').onclick = () => {
+    portions++;
+    document.getElementById('ro-portions-val').textContent = portions;
+    document.getElementById('ro-ings').innerHTML = ingHtml(portions);
+  };
+  document.getElementById('ro-meal-plan-btn').onclick = () => addRecipeToMealPlanFlow(r, portions);
+  document.getElementById('ro-list-btn').onclick = () => addRecipeToListFlow(r.id, portions);
 }
 
-async function showRecipeDetail(recipeId) {
-  const r = await api(`/recipes/${recipeId}`);
-  const ingredientsList = (r.ingredients || []).map(i => `<li>${i.quantity} ${i.unit} ${i.name}</li>`).join('');
-  const body = `
-    <div class="recipe-detail-ingredients"><strong>Ingredients</strong> (${r.default_servings} servings)<ul>${ingredientsList}</ul></div>
-    ${r.directions ? `<div style="margin-top:12px"><strong>Directions</strong><pre style="white-space:pre-wrap;font-size:.85rem;margin-top:4px">${escapeHtml(r.directions)}</pre></div>` : ''}
-    <p style="margin-top:12px">${recipeStarsWidget(r.user_rating, r.id)}</p>
-    <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
-      <button type="button" class="btn-primary btn-sm" onclick="addRecipeToMealPlanFromModal(${r.id}, '${escapeHtml(r.name)}')">Add to meal plan</button>
-      <button type="button" class="btn-sm" onclick="addRecipeToListFromModal(${r.id}, ${r.default_servings})">Add ingredients to list</button>
-    </div>`;
-  modal('Recipe: ' + r.name, body, () => closeModal());
+function _starsWidget(current, recipeId) {
+  let h = '';
+  for (let i = 1; i <= 5; i++) {
+    h += `<button type="button" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:2px;color:${i <= (current || 0) ? '#d4a017' : 'var(--muted)'}"
+      onclick="rateRecipe(${recipeId},${i})">${i <= (current || 0) ? '★' : '☆'}</button>`;
+  }
+  return h;
 }
 
 async function rateRecipe(recipeId, rating) {
   await api(`/recipes/${recipeId}/rate`, { method: 'POST', body: JSON.stringify({ rating }) });
   const r = await api(`/recipes/${recipeId}`);
+  const starsEl = document.getElementById('ro-stars');
+  if (starsEl) starsEl.innerHTML = _starsWidget(r.user_rating, recipeId);
   const card = document.querySelector(`.recipe-card[data-recipe-id="${recipeId}"]`);
-  if (card && card.querySelector('.recipe-stars')) {
-    const stars = r.rating_avg != null ? '★'.repeat(Math.round(r.rating_avg)) + '☆'.repeat(5 - Math.round(r.rating_avg)) : '—';
-    card.querySelector('.recipe-stars').innerHTML = stars;
+  if (card) {
+    const starsCard = card.querySelector('.recipe-stars');
+    if (starsCard && r.rating_avg != null)
+      starsCard.textContent = '★'.repeat(Math.round(r.rating_avg)) + '☆'.repeat(5 - Math.round(r.rating_avg));
   }
   toast('Rated');
 }
 
-async function addRecipeToMealPlanFromModal(recipeId, recipeName) {
+async function addRecipeToMealPlanFlow(recipe, portions) {
+  // Show day picker overlay on top of recipe overlay
   const [y, w] = mealPlanGetYw();
-  const day = prompt('Day (1=Mon .. 5=Fri):', '1');
-  if (day == null) return;
-  const d = parseInt(day, 10);
-  if (d < 1 || d > 5) { toast('Use 1–5'); return; }
-  const servings = prompt('Servings for this meal:', '4');
-  const serv = servings ? parseInt(servings, 10) : 4;
-  await api(`/meal-plan/slot?year=${y}&week=${w}&day=${d}`, {
-    method: 'PUT',
-    body: JSON.stringify({ dinner: recipeName, recipe_id: recipeId, recipe_servings: serv }),
-  });
-  toast('Added to meal plan');
-  closeModal();
-  loadMealPlan();
+  const entries = await api(`/meal-plan?year=${y}&week=${w}`);
+  const byDay = Object.fromEntries(entries.map(e => [e.day, e]));
+  let selectedDay = null;
+  let selectedWeekOffset = 0; // 0 = current week, 1 = next, etc.
+
+  function weekDayPickerHtml(weekOffset) {
+    const [wy, ww] = (() => {
+      let ny = y, nw = w + weekOffset;
+      while (nw > 52) { ny++; nw -= 52; }
+      while (nw < 1) { ny--; nw += 52; }
+      return [ny, nw];
+    })();
+    const today = new Date(); today.setHours(0,0,0,0);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <button class="btn-sm" onclick="mpFlowWeekNav(-1)">‹</button>
+      <span style="flex:1;text-align:center;font-size:.9rem">Week ${nw} · ${ny}</span>
+      <button class="btn-sm" onclick="mpFlowWeekNav(1)">›</button>
+    </div>
+    <div class="day-picker" id="mp-flow-days">` +
+    Array.from({length:7},(_,i)=>{
+      const d = i + 1;
+      const dd = _mealDayDate(wy, nw, d);
+      const e = weekOffset === 0 ? byDay[d] : null;
+      const sel = selectedDay === d && selectedWeekOffset === weekOffset ? ' active' : '';
+      return `<div class="day-picker-btn${sel}" onclick="mpFlowSelectDay(${d},${weekOffset})">
+        <div class="dp-name">${_DAY_NAMES[i]}</div>
+        <div class="dp-date">${dd.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}</div>
+        ${e?.dinner ? `<div class="dp-meal">${escapeHtml(e.dinner)}</div>` : ''}
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  window.mpFlowWeekNav = (delta) => {
+    selectedWeekOffset += delta;
+    document.getElementById('mp-flow-week-container').innerHTML = weekDayPickerHtml(selectedWeekOffset);
+  };
+  window.mpFlowSelectDay = (day, weekOffset) => {
+    selectedDay = day; selectedWeekOffset = weekOffset;
+    document.querySelectorAll('.day-picker-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  };
+
+  const body = `
+    <p style="color:var(--muted);margin-bottom:10px;font-size:.9rem">Select the day for <strong>${escapeHtml(recipe.name)}</strong></p>
+    <div id="mp-flow-week-container">${weekDayPickerHtml(0)}</div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:.9rem;color:var(--muted)">Portions:</span>
+      <div class="portions-stepper">
+        <button class="portions-btn" type="button" onclick="mpFlowPortAdj(-1)">−</button>
+        <span class="portions-val" id="mpflow-portions">${portions}</span>
+        <button class="portions-btn" type="button" onclick="mpFlowPortAdj(1)">+</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button type="button" class="btn-primary" id="mpflow-save">Add to meal plan</button>
+    </div>`;
+
+  window.mpFlowPortAdj = (delta) => {
+    const el = document.getElementById('mpflow-portions');
+    el.textContent = Math.max(1, (parseInt(el.textContent) || 1) + delta);
+  };
+
+  modal('Add to Meal Plan', body, () => {});
+  document.getElementById('mpflow-save').onclick = async () => {
+    if (selectedDay === null) { toast('Select a day first'); return; }
+    const portVal = parseInt(document.getElementById('mpflow-portions')?.textContent || portions);
+    let [wy, ww] = [y, w + selectedWeekOffset];
+    while (ww > 52) { wy++; ww -= 52; }
+    while (ww < 1) { wy--; ww += 52; }
+    await api(`/meal-plan/slot?year=${wy}&week=${ww}&day=${selectedDay}`, {
+      method: 'PUT',
+      body: JSON.stringify({ dinner: recipe.name, recipe_id: recipe.id, recipe_servings: portVal }),
+    });
+    toast('Added to meal plan');
+    closeModal();
+    if (_mealPlanYear === wy && _mealPlanWeek === ww) loadMealPlan();
+  };
 }
 
-async function addRecipeToListFromModal(recipeId, defaultServings) {
+async function addRecipeToListFlow(recipeId, portions) {
   const lists = await api('/lists');
   if (!lists.length) { toast('Create a list first'); return; }
   const currentListId = document.getElementById('list-select')?.value;
   const listId = currentListId ? parseInt(currentListId, 10) : lists[0].id;
-  const servings = prompt('Servings (ingredients scaled):', String(defaultServings));
-  const serv = servings ? parseInt(servings, 10) : defaultServings;
-  if (!serv) return;
   try {
-    const res = await api(`/recipes/${recipeId}/add-to-list?list_id=${listId}&servings=${serv}`);
-    toast(`Added ${res.added.length} ingredients${res.skipped.length ? '; ' + res.skipped.length + ' not in library' : ''}`);
-    closeModal();
+    const res = await api(`/recipes/${recipeId}/add-to-list?list_id=${listId}&servings=${portions}`);
+    toast(`Added ${res.added.length} ingredients${res.skipped?.length ? '; ' + res.skipped.length + ' not in library' : ''}`);
     if (document.getElementById('list-select')) loadShoppingList();
   } catch (e) {
     toast(e.message || 'Failed');
   }
 }
+
+async function openEditTagsModal(recipeId) {
+  const r = await api(`/recipes/${recipeId}`);
+  const allTags = ['meat','fish','rice','pasta','dessert','snack','salad','breakfast','lowfat','fast'];
+  const current = new Set(r.tags || []);
+  const body = `<p style="color:var(--muted);margin-bottom:12px;font-size:.9rem">Toggle tags for <strong>${escapeHtml(r.name)}</strong></p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+      ${allTags.map(t => `<button class="tag-btn${current.has(t) ? ' active' : ''}" data-tag="${t}"
+        onclick="this.classList.toggle('active')">${t}</button>`).join('')}
+    </div>
+    <div class="modal-actions"><button type="button" class="btn-primary" id="save-tags-btn">Save tags</button></div>`;
+  modal('Edit Tags', body, () => {});
+  document.getElementById('save-tags-btn').onclick = async () => {
+    const tags = [...document.querySelectorAll('.tag-btn.active[data-tag]')].map(b => b.dataset.tag).filter(Boolean);
+    await api(`/recipes/${recipeId}`, { method: 'PUT', body: JSON.stringify({ tags }) });
+    toast('Tags saved');
+    closeModal();
+    const overlay = document.getElementById('recipe-overlay');
+    if (overlay) { overlay.remove(); openRecipeOverlay(recipeId); }
+    loadRecipes();
+  };
+}
+
+async function confirmDeleteRecipe(recipeId) {
+  if (!confirm('Delete this recipe?')) return;
+  await api(`/recipes/${recipeId}`, { method: 'DELETE' });
+  document.getElementById('recipe-overlay')?.remove();
+  toast('Deleted');
+  loadRecipes();
+}
+
+// Legacy stubs
+function recipeStarsWidget() { return ''; }
+async function showRecipeDetail(id) { return openRecipeOverlay(id); }
+async function addRecipeToMealPlanFromModal(id, name) {}
+async function addRecipeToListFromModal(id, serv) {}
 
 document.getElementById('recipes-sync-obsidian-folder')?.addEventListener('click', async () => {
   const btn = document.getElementById('recipes-sync-obsidian-folder');
@@ -2534,29 +3029,52 @@ async function openAddWeekToListModal() {
     ingredients = [];
   }
   if (!ingredients.length) {
-    toast('No recipe-linked meals this week, or add recipes to meal plan first.');
+    toast('No recipe-linked meals this week. Add recipes to meal plan days first.');
     return;
   }
   const listId = document.getElementById('list-select')?.value || (await api('/lists'))[0]?.id;
   if (!listId) { toast('Create a list first'); return; }
-  const rows = ingredients.map((ing, i) =>
-    `<tr><td><input type="checkbox" checked data-i="${i}"></td><td>${escapeHtml(ing.name)}</td>
-     <td><input type="number" step="0.01" min="0" value="${ing.quantity}" data-i="${i}" style="width:70px"></td>
-     <td>${escapeHtml(ing.unit)}</td></tr>`).join('');
-  const body = `<p style="color:var(--muted);margin-bottom:12px">Review and edit quantities, then add to list.</p>
-    <table><thead><tr><th>Add</th><th>Ingredient</th><th>Qty</th><th>Unit</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="modal-actions"><button type="button" class="btn-primary" id="week-to-list-confirm">Add to list</button></div>`;
-  modal('Add week ingredients to list', body, () => {});
+
+  const rows = ingredients.map((ing, i) => {
+    const ctx = (ing.context || []).join(', ');
+    const expVal = ing.expiration_date || '';
+    return `<tr>
+      <td><input type="checkbox" checked data-i="${i}"></td>
+      <td>
+        <div style="font-size:.88rem;font-weight:600">${escapeHtml(ing.name)}</div>
+        ${ctx ? `<div style="font-size:.72rem;color:var(--muted)">${escapeHtml(ctx)}</div>` : ''}
+      </td>
+      <td><input type="number" step="0.01" min="0" value="${ing.quantity}" data-i="${i}" style="width:65px;font-size:.85rem"></td>
+      <td style="font-size:.82rem">${escapeHtml(ing.unit)}</td>
+      <td><input type="date" value="${expVal}" data-exp="${i}" style="font-size:.75rem;width:120px" title="Expiration date"></td>
+    </tr>`;
+  }).join('');
+
+  const body = `<p style="color:var(--muted);margin-bottom:10px;font-size:.88rem">Expiration dates auto-set from meal days. Edit as needed.</p>
+    <div style="overflow-x:auto">
+    <table style="min-width:500px"><thead><tr><th></th><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Expires</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button type="button" class="btn-primary" id="week-to-list-confirm">Add to list</button>
+    </div>`;
+
+  modal(`Add Week ${w} to list`, body, () => {});
   document.getElementById('week-to-list-confirm').onclick = async () => {
     const tbody = document.querySelector('#modal-container table tbody');
     const out = [];
     tbody.querySelectorAll('tr').forEach(tr => {
       const cb = tr.querySelector('input[type=checkbox]');
       const qtyInput = tr.querySelector('input[type=number]');
+      const expInput = tr.querySelector('input[type=date]');
       if (cb?.checked && qtyInput) {
         const i = parseInt(qtyInput.dataset.i, 10);
         const ing = ingredients[i];
-        if (ing) out.push({ name: ing.name, quantity: parseFloat(qtyInput.value) || 0, unit: ing.unit });
+        if (ing) out.push({
+          name: ing.name,
+          quantity: parseFloat(qtyInput.value) || 0,
+          unit: ing.unit,
+          expiration_date: expInput?.value || null,
+        });
       }
     });
     await api(`/recipes/meal-plan/add-week-to-list?list_id=${listId}&year=${y}&week=${w}`, {
@@ -2570,6 +3088,124 @@ async function openAddWeekToListModal() {
 }
 
 document.getElementById('mealplan-add-week-to-list')?.addEventListener('click', openAddWeekToListModal);
+
+// ── Import Recipe from URL ──
+async function openImportRecipeModal() {
+  const allTags = ['meat','fish','rice','pasta','dessert','snack','salad','breakfast','lowfat','fast'];
+  let previewData = null;
+
+  function previewHtml(d) {
+    const img = d.thumbnail_url
+      ? `<img src="${escapeHtml(d.thumbnail_url)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius);margin-bottom:12px" alt="">`
+      : '';
+    const ings = (d.ingredients || []).map(i =>
+      `<li style="font-size:.85rem;padding:3px 0">${i.quantity} ${escapeHtml(i.unit)} ${escapeHtml(i.name)}</li>`).join('');
+    const tagBtns = allTags.map(t =>
+      `<button class="tag-btn" data-tag="${t}" onclick="this.classList.toggle('active')">${t}</button>`).join('');
+    return `${img}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="flex:1;min-width:180px">
+          <label style="font-size:.8rem;color:var(--muted)">Name</label>
+          <input id="imp-name" value="${escapeHtml(d.name)}" style="width:100%;margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:.8rem;color:var(--muted)">Servings</label>
+          <input id="imp-serv" type="number" min="1" value="${d.default_servings || 4}" style="width:70px;margin-top:4px">
+        </div>
+        ${d.cooking_time_minutes ? `<div><label style="font-size:.8rem;color:var(--muted)">Cook time (min)</label>
+          <input id="imp-time" type="number" min="1" value="${d.cooking_time_minutes}" style="width:80px;margin-top:4px"></div>` : ''}
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:.8rem;color:var(--muted)">Source</label>
+        <div style="font-size:.82rem;color:var(--accent);word-break:break-all;margin-top:3px">${escapeHtml(d.source_url || '')}</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:.8rem;color:var(--muted)">Tags</label>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">${tagBtns}</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:.8rem;color:var(--muted)">Ingredients (${(d.ingredients||[]).length})</label>
+        <ul style="margin-top:5px;padding-left:16px">${ings}</ul>
+      </div>
+      ${d.directions ? `<details style="margin-bottom:12px"><summary style="font-size:.85rem;cursor:pointer;color:var(--muted)">Directions</summary>
+        <pre style="white-space:pre-wrap;font-size:.82rem;margin-top:6px;color:var(--text)">${escapeHtml(d.directions)}</pre></details>` : ''}
+      <div class="modal-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn-primary" id="imp-save">Save recipe</button>
+        <button type="button" class="btn-sm" id="imp-cancel-preview" style="color:var(--muted)">Change URL</button>
+      </div>`;
+  }
+
+  const body = `
+    <p style="color:var(--muted);margin-bottom:12px;font-size:.9rem">Paste a URL (website, YouTube, Instagram, …). We'll extract the recipe for you to review before saving.</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input id="imp-url" placeholder="https://…" style="flex:1" type="url">
+      <button class="btn-primary btn-sm" id="imp-fetch-btn" type="button">Extract</button>
+    </div>
+    <div id="imp-status" style="font-size:.85rem;color:var(--muted);margin-bottom:8px"></div>
+    <div id="imp-preview"></div>`;
+
+  modal('Import Recipe from URL', body, () => {});
+
+  async function doFetch() {
+    const url = document.getElementById('imp-url')?.value?.trim();
+    if (!url) { toast('Paste a URL first'); return; }
+    const statusEl = document.getElementById('imp-status');
+    const fetchBtn = document.getElementById('imp-fetch-btn');
+    statusEl.textContent = '⏳ Extracting recipe… this may take 15-30 seconds.';
+    if (fetchBtn) fetchBtn.disabled = true;
+    try {
+      previewData = await api('/recipes/import-url/preview', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      });
+      statusEl.textContent = '';
+      document.getElementById('imp-preview').innerHTML = previewHtml(previewData);
+      document.getElementById('imp-save').onclick = saveImported;
+      document.getElementById('imp-cancel-preview').onclick = () => {
+        document.getElementById('imp-preview').innerHTML = '';
+        previewData = null;
+        statusEl.textContent = '';
+        if (fetchBtn) fetchBtn.disabled = false;
+      };
+    } catch (e) {
+      statusEl.textContent = '❌ ' + (e.message || 'Failed to extract recipe');
+      if (fetchBtn) fetchBtn.disabled = false;
+    }
+  }
+
+  async function saveImported() {
+    if (!previewData) return;
+    const name = document.getElementById('imp-name')?.value?.trim() || previewData.name;
+    const servings = parseInt(document.getElementById('imp-serv')?.value || previewData.default_servings);
+    const cookTime = document.getElementById('imp-time') ? parseInt(document.getElementById('imp-time').value) : previewData.cooking_time_minutes;
+    const tags = [...document.querySelectorAll('#modal-container .tag-btn.active[data-tag]')].map(b => b.dataset.tag);
+    const payload = {
+      name,
+      source_path: null,
+      source_url: previewData.source_url,
+      thumbnail_url: previewData.thumbnail_url,
+      default_servings: servings || 4,
+      cooking_time_minutes: cookTime || null,
+      recipe_type: previewData.recipe_type || null,
+      nutrition: previewData.nutrition || null,
+      kid_friendly: previewData.kid_friendly || null,
+      tags,
+      ingredients: previewData.ingredients,
+      directions: previewData.directions || null,
+    };
+    try {
+      await api('/recipes', { method: 'POST', body: JSON.stringify(payload) });
+      toast('Recipe saved!');
+      closeModal();
+      loadRecipes();
+    } catch (e) {
+      toast(e.message || 'Failed to save');
+    }
+  }
+
+  document.getElementById('imp-fetch-btn').addEventListener('click', doFetch);
+  document.getElementById('imp-url').addEventListener('keydown', e => { if (e.key === 'Enter') doFetch(); });
+}
 
 // ── Recent Purchases (expiration only here) ──
 async function loadRecentPurchases() {

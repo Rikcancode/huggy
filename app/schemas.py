@@ -277,6 +277,7 @@ class RecipeOut(BaseModel):
     nutrition: RecipeNutrition | None = None
     kid_friendly: bool | None = None
     cooking_time_minutes: int | None = None
+    tags: list[str] = []
     default_servings: int
     ingredients: list[RecipeIngredient]
     directions: str | None
@@ -291,7 +292,14 @@ class RecipeOut(BaseModel):
 class RecipeCreate(BaseModel):
     name: str
     source_path: str | None = None
+    source_url: str | None = None
+    thumbnail_url: str | None = None
+    cooking_time_minutes: int | None = None
+    recipe_type: str | None = None
+    kid_friendly: bool | None = None
+    nutrition: RecipeNutrition | None = None
     default_servings: int = 4
+    tags: list[str] = []
     ingredients: list[RecipeIngredient]
     directions: str | None = None
 
@@ -299,12 +307,20 @@ class RecipeCreate(BaseModel):
 class RecipeUpdate(BaseModel):
     name: str | None = None
     default_servings: int | None = None
+    tags: list[str] | None = None
     ingredients: list[RecipeIngredient] | None = None
     directions: str | None = None
 
 
 class RecipeRatingUpdate(BaseModel):
     rating: int  # 1-5
+
+
+class WeekIngredientItem(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+    expiration_date: str | None = None  # YYYY-MM-DD, set to earliest meal day that uses this ingredient
 
 
 class ObsidianSyncFolderResult(BaseModel):
@@ -323,7 +339,7 @@ class MealPlanEntryOut(BaseModel):
     id: int
     year: int
     week: int
-    day: int  # 1=Mon .. 5=Fri
+    day: int  # 1=Mon .. 7=Sun
     dinner: str
     recipe_id: int | None = None
     recipe_servings: int | None = None

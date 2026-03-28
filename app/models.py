@@ -163,6 +163,7 @@ class Recipe(Base):
     nutrition = Column(JSONType, nullable=True)         # {calories, protein, carbs, fats} per serving
     kid_friendly = Column(Boolean, nullable=True)
     cooking_time_minutes = Column(Integer, nullable=True)
+    tags = Column(JSONType, default=list)  # ["meat", "pasta", ...]
     default_servings = Column(Integer, nullable=False, default=4)
     ingredients = Column(JSONType, default=list)  # [{"name": str, "quantity": float, "unit": str}, ...]
     directions = Column(Text, nullable=True)
@@ -188,16 +189,32 @@ class RecipeRating(Base):
 
 
 class MealPlanEntry(Base):
-    """Evening meal (dinner) for a weekday. day 1=Monday .. 5=Friday."""
+    """Meal for a day of the week. day 1=Monday .. 7=Sunday."""
     __tablename__ = "meal_plan_entries"
     __table_args__ = (UniqueConstraint("year", "week", "day", name="uq_meal_plan_year_week_day"),)
 
     id = Column(Integer, primary_key=True)
     year = Column(Integer, nullable=False)
     week = Column(Integer, nullable=False)  # ISO week 1-53
-    day = Column(Integer, nullable=False)   # 1=Monday .. 5=Friday
+    day = Column(Integer, nullable=False)   # 1=Monday .. 7=Sunday
     dinner = Column(String(300), nullable=False, default="")  # free text or recipe name
     recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True)
     recipe_servings = Column(Integer, nullable=True)  # override for this slot; null = use recipe default
 
     recipe = relationship("Recipe", foreign_keys=[recipe_id])
+
+
+class KidScheduleEntry(Base):
+    """Kid pickup/dropoff assignment for a day. slot: 'morning' or 'afternoon'."""
+    __tablename__ = "kid_schedule_entries"
+    __table_args__ = (UniqueConstraint("year", "week", "day", "slot", name="uq_kid_schedule_day_slot"),)
+
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer, nullable=False)
+    week = Column(Integer, nullable=False)
+    day = Column(Integer, nullable=False)   # 1=Monday .. 7=Sunday
+    slot = Column(String(20), nullable=False)  # 'morning' (drop-off) | 'afternoon' (pickup)
+    assigned_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(String(300), nullable=True)
+
+    assigned_user = relationship("User", foreign_keys=[assigned_user_id])

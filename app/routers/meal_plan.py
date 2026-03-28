@@ -32,7 +32,7 @@ def get_week(
     )
     by_day = {e.day: e for e in entries}
     out = []
-    for day in range(1, 6):  # Mon=1 .. Fri=5
+    for day in range(1, 8):  # Mon=1 .. Sun=7
         if day in by_day:
             out.append(by_day[day])
         else:
@@ -48,7 +48,7 @@ def get_week(
 def set_day(
     year: int = Query(..., description="ISO year"),
     week: int = Query(..., ge=1, le=53),
-    day: int = Query(..., ge=1, le=5, description="1=Mon .. 5=Fri"),
+    day: int = Query(..., ge=1, le=7, description="1=Mon .. 7=Sun"),
     data: MealPlanDayUpdate = ...,
     user=Depends(get_current_user),
     db: Session = Depends(get_db),

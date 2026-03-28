@@ -15,7 +15,7 @@ def _client() -> httpx.Client | None:
     headers = {}
     if settings.obsidian_api_key:
         headers["Authorization"] = f"Bearer {settings.obsidian_api_key}"
-    return httpx.Client(base_url=base, headers=headers, timeout=15.0)
+    return httpx.Client(base_url=base, headers=headers, timeout=15.0, verify=False)
 
 
 def obsidian_available() -> bool:
@@ -75,7 +75,9 @@ def obsidian_list_folder(path: str = "") -> list[str] | None:
             r = c.get(url)
             if r.status_code != 200:
                 return None
-            return r.json()
+            data = r.json()
+            # Obsidian API returns {"files": [...]} — extract the list
+            return data.get("files") if isinstance(data, dict) else data
     except Exception:
         return None
 
@@ -141,17 +143,21 @@ def parse_recipe_markdown(md: str, title: str | None = None) -> dict | None:
     directions_lines = []
     name = title or "Untitled"
 
-    # Try YAML frontmatter for title/servings
+    source_url: str | None = None
+    # Try YAML frontmatter for title/servings/source
     if lines and lines[0].strip() == "---":
         i = 1
         while i < len(lines) and lines[i].strip() != "---":
-            if lines[i].strip().lower().startswith("title:"):
+            stripped_line = lines[i].strip()
+            key_lower = stripped_line.lower()
+            if key_lower.startswith("title:"):
                 name = lines[i].split(":", 1)[1].strip().strip("'\"").strip()
-            elif lines[i].strip().lower().startswith("servings:"):
-                try:
-                    pass  # could set default_servings from here
-                except ValueError:
-                    pass
+            elif key_lower.startswith("source:") or key_lower.startswith("url:") or key_lower.startswith("source_url:"):
+                val = lines[i].split(":", 1)[1].strip().strip("'\"").strip()
+                if val.startswith("http"):
+                    source_url = val
+            elif key_lower.startswith("servings:"):
+                pass  # could set default_servings from here
             i += 1
         lines = lines[i + 1 :]  # skip frontmatter
 
@@ -175,6 +181,7 @@ def parse_recipe_markdown(md: str, title: str | None = None) -> dict | None:
     return {
         "name": name,
         "default_servings": 4,
+        "source_url": source_url,
         "ingredients": ingredients,
         "directions": "\n".join(directions_lines).strip() or None,
     }

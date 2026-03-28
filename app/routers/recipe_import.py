@@ -131,6 +131,58 @@ Rules:
     return data
 
 
+def _scrape_and_parse(url: str) -> tuple[dict, str | None]:
+    """Scrape URL and parse with Gemini. Returns (parsed_dict, thumbnail_url)."""
+    thumbnail_url: str | None = None
+    if _is_instagram(url):
+        post = _fetch_instagram(url)
+        caption = post.get("caption") or ""
+        thumbnail_url = post.get("displayUrl")
+        external_url = post.get("externalUrl") or _extract_url_from_text(caption)
+        if external_url:
+            try:
+                web_content = _fetch_web(external_url)
+                content = f"Instagram caption:\n{caption}\n\nLinked page:\n{web_content}"
+            except Exception:
+                content = caption
+        else:
+            content = caption
+    else:
+        content = _fetch_web(url)
+    parsed = _parse_with_gemini(content, url)
+    return parsed, thumbnail_url
+
+
+@router.post("/import-url/preview")
+def preview_recipe_import(
+    body: ImportUrlRequest,
+    user=Depends(get_current_user),
+):
+    """Scrape and parse a recipe URL without saving. Returns preview data for user review."""
+    url = body.url.strip()
+    parsed, thumbnail_url = _scrape_and_parse(url)
+    ingredients = [
+        {"name": ing["name"], "quantity": float(ing["quantity"]), "unit": ing.get("unit", "unit")}
+        for ing in (parsed.get("ingredients") or [])
+        if ing.get("name")
+    ]
+    if not ingredients:
+        raise HTTPException(422, "No ingredients could be extracted from the recipe")
+    return {
+        "name": parsed.get("name") or "Imported Recipe",
+        "source_url": url,
+        "thumbnail_url": thumbnail_url,
+        "default_servings": int(parsed.get("default_servings") or 4),
+        "cooking_time_minutes": parsed.get("cooking_time_minutes"),
+        "recipe_type": parsed.get("recipe_type"),
+        "nutrition": parsed.get("nutrition"),
+        "kid_friendly": parsed.get("kid_friendly"),
+        "tags": [],
+        "ingredients": ingredients,
+        "directions": parsed.get("directions"),
+    }
+
+
 @router.post("/import-url", response_model=RecipeOut, status_code=201)
 def import_recipe_from_url(
     body: ImportUrlRequest,
@@ -150,26 +202,7 @@ def import_recipe_from_url(
       kid-friendliness are labelled.
     """
     url = body.url.strip()
-    thumbnail_url: str | None = None
-
-    if _is_instagram(url):
-        post = _fetch_instagram(url)
-        caption = post.get("caption") or ""
-        thumbnail_url = post.get("displayUrl")
-
-        external_url = post.get("externalUrl") or _extract_url_from_text(caption)
-        if external_url:
-            try:
-                web_content = _fetch_web(external_url)
-                content = f"Instagram caption:\n{caption}\n\nLinked page:\n{web_content}"
-            except Exception:
-                content = caption
-        else:
-            content = caption
-    else:
-        content = _fetch_web(url)
-
-    parsed = _parse_with_gemini(content, url)
+    parsed, thumbnail_url = _scrape_and_parse(url)
 
     ingredients = [
         {"name": ing["name"], "quantity": float(ing["quantity"]), "unit": ing.get("unit", "unit")}
@@ -189,6 +222,7 @@ def import_recipe_from_url(
         recipe_type=parsed.get("recipe_type"),
         nutrition=parsed.get("nutrition"),
         kid_friendly=parsed.get("kid_friendly"),
+        tags=[],
         ingredients=ingredients,
         directions=parsed.get("directions"),
     )

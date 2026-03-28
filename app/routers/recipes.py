@@ -17,6 +17,7 @@ from app.schemas import (
     RecipeIngredient,
     RecipeNutrition,
     ObsidianSyncFolderResult,
+    WeekIngredientItem,
 )
 from app.auth import get_current_user
 from app.obsidian import obsidian_available, obsidian_get_file, obsidian_list_folder, parse_recipe_markdown
@@ -31,6 +32,8 @@ def _recipe_to_out(r: Recipe, user_id: int | None, db: Session) -> RecipeOut:
     avg = (sum(x.rating for x in ratings) / len(ratings)) if ratings else None
     user_rating = next((x.rating for x in ratings if x.user_id == user_id), None)
     nutrition = RecipeNutrition(**r.nutrition) if isinstance(r.nutrition, dict) else None
+    raw_tags = r.tags
+    tags = raw_tags if isinstance(raw_tags, list) else []
     return RecipeOut(
         id=r.id,
         name=r.name,
@@ -41,6 +44,7 @@ def _recipe_to_out(r: Recipe, user_id: int | None, db: Session) -> RecipeOut:
         nutrition=nutrition,
         kid_friendly=r.kid_friendly,
         cooking_time_minutes=r.cooking_time_minutes,
+        tags=tags,
         default_servings=r.default_servings,
         ingredients=[RecipeIngredient(**x) for x in (r.ingredients or [])],
         directions=r.directions,
@@ -55,6 +59,7 @@ def _recipe_to_out(r: Recipe, user_id: int | None, db: Session) -> RecipeOut:
 @router.get("", response_model=list[RecipeOut])
 def list_recipes(
     q: str | None = Query(None, description="Search name"),
+    tag: str | None = Query(None, description="Filter by tag (e.g. 'meat')"),
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -85,7 +90,11 @@ def list_recipes(
     if q:
         query = query.filter(Recipe.name.ilike(f"%{q}%"))
     recipes = query.order_by(Recipe.name).all()
-    return [_recipe_to_out(r, user.id, db) for r in recipes]
+    out = [_recipe_to_out(r, user.id, db) for r in recipes]
+    # Tag filtering is done in Python since tags are stored as JSON in SQLite.
+    if tag:
+        out = [r for r in out if tag.lower() in [t.lower() for t in r.tags]]
+    return out
 
 
 @router.get("/obsidian-available")
@@ -159,7 +168,8 @@ def _join_folder_and_entry(folder: str, entry: str) -> str:
     entry = _normalize_obsidian_relpath(entry)
     if not entry:
         return folder
-    if "/" in entry:
+    # Only treat entry as a full path if "/" appears before the trailing slash
+    if "/" in entry.rstrip("/"):
         return entry
     if folder:
         return f"{folder}/{entry}"
@@ -180,7 +190,9 @@ def _upsert_recipe_from_obsidian_path(
     raw = obsidian_get_file(vault_path)
     if not raw:
         return False, False, "File not found or unreadable"
-    parsed = parse_recipe_markdown(raw)
+    filename = vault_path.split("/")[-1]
+    title_from_filename = filename[:-3] if filename.lower().endswith(".md") else filename
+    parsed = parse_recipe_markdown(raw, title=title_from_filename)
     if not parsed or not parsed.get("ingredients"):
         return False, False, "Could not parse recipe (no ingredients section?)"
 
@@ -191,12 +203,15 @@ def _upsert_recipe_from_obsidian_path(
         existing.default_servings = parsed.get("default_servings", 4)
         existing.ingredients = parsed["ingredients"]
         existing.directions = parsed.get("directions")
+        if parsed.get("source_url"):
+            existing.source_url = parsed["source_url"]
         db.commit()
         return True, was_update, None
 
     recipe = Recipe(
         name=parsed["name"],
         source_path=vault_path,
+        source_url=parsed.get("source_url"),
         default_servings=parsed.get("default_servings", 4),
         ingredients=parsed["ingredients"],
         directions=parsed.get("directions"),
@@ -309,10 +324,18 @@ def create_recipe(
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    nutrition = data.nutrition.model_dump() if data.nutrition else None
     recipe = Recipe(
         name=data.name,
         source_path=data.source_path,
+        source_url=data.source_url,
+        thumbnail_url=data.thumbnail_url,
+        cooking_time_minutes=data.cooking_time_minutes,
+        recipe_type=data.recipe_type,
+        kid_friendly=data.kid_friendly,
+        nutrition=nutrition,
         default_servings=data.default_servings,
+        tags=data.tags or [],
         ingredients=[x.model_dump() for x in data.ingredients],
         directions=data.directions,
     )
@@ -336,6 +359,8 @@ def update_recipe(
         r.name = data.name
     if data.default_servings is not None:
         r.default_servings = data.default_servings
+    if data.tags is not None:
+        r.tags = data.tags
     if data.ingredients is not None:
         r.ingredients = [x.model_dump() for x in data.ingredients]
     if data.directions is not None:
@@ -434,26 +459,51 @@ def add_recipe_to_list(
 
 
 def _get_week_ingredients(db: Session, year: int, week: int) -> list[dict]:
-    """Aggregate ingredients from all recipe slots in the week. Same ingredient merged (summed)."""
+    """Aggregate ingredients from all recipe slots in the week. Same ingredient merged (summed).
+    Each result includes expiration_date (earliest meal day that uses the ingredient) and context."""
     entries = (
         db.query(MealPlanEntry)
         .filter(MealPlanEntry.year == year, MealPlanEntry.week == week, MealPlanEntry.recipe_id.isnot(None))
         .options(joinedload(MealPlanEntry.recipe))
         .all()
     )
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     merged = {}
     for e in entries:
         if not e.recipe or not e.recipe.ingredients:
             continue
         servings = e.recipe_servings or e.recipe.default_servings
         scale = servings / max(1, e.recipe.default_servings)
+        meal_date = date.fromisocalendar(year, week, e.day)
+        day_label = day_names[e.day - 1] if 1 <= e.day <= 7 else str(e.day)
         for ing in e.recipe.ingredients:
             key = (ing["name"].strip().lower(), ing.get("unit", "unit"))
             qty = ing["quantity"] * scale
             if key not in merged:
-                merged[key] = {"name": ing["name"].strip(), "quantity": 0, "unit": ing.get("unit", "unit")}
+                merged[key] = {
+                    "name": ing["name"].strip(),
+                    "quantity": 0,
+                    "unit": ing.get("unit", "unit"),
+                    "expiration_date": meal_date,
+                    "context": [f"{day_label}: {e.recipe.name}"],
+                }
+            else:
+                if meal_date < merged[key]["expiration_date"]:
+                    merged[key]["expiration_date"] = meal_date
+                ctx = f"{day_label}: {e.recipe.name}"
+                if ctx not in merged[key]["context"]:
+                    merged[key]["context"].append(ctx)
             merged[key]["quantity"] += qty
-    return [{"name": v["name"], "quantity": round(v["quantity"], 2), "unit": v["unit"]} for v in merged.values()]
+    return [
+        {
+            "name": v["name"],
+            "quantity": round(v["quantity"], 2),
+            "unit": v["unit"],
+            "expiration_date": v["expiration_date"].isoformat(),
+            "context": v["context"],
+        }
+        for v in merged.values()
+    ]
 
 
 @router.get("/meal-plan/week-ingredients")
@@ -472,7 +522,7 @@ def add_week_to_list(
     list_id: int = Query(...),
     year: int = Query(...),
     week: int = Query(..., ge=1, le=53),
-    ingredients: list[RecipeIngredient] | None = Body(None, description="Override: use this list instead of computed"),
+    ingredients: list[WeekIngredientItem] | None = Body(None, description="Override: use this list (with expiration dates) instead of computed"),
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -481,7 +531,7 @@ def add_week_to_list(
     if not gl:
         raise HTTPException(404, "List not found")
     if ingredients is not None and len(ingredients) > 0:
-        to_add = [{"name": x.name, "quantity": x.quantity, "unit": x.unit} for x in ingredients]
+        to_add = [{"name": x.name, "quantity": x.quantity, "unit": x.unit, "expiration_date": x.expiration_date} for x in ingredients]
     else:
         to_add = _get_week_ingredients(db, year, week)
     added = []
@@ -492,6 +542,14 @@ def add_week_to_list(
             skipped.append(ing["name"])
             continue
         qty = ing["quantity"]
+        exp_str = ing.get("expiration_date")
+        exp_date = None
+        if exp_str:
+            try:
+                from datetime import date as _date
+                exp_date = _date.fromisoformat(exp_str)
+            except (ValueError, TypeError):
+                exp_date = None
         existing = db.query(GroceryListItem).filter(
             GroceryListItem.list_id == list_id,
             GroceryListItem.library_item_id == lib.id,
@@ -499,6 +557,9 @@ def add_week_to_list(
         ).first()
         if existing:
             existing.quantity += qty
+            # Use the earlier expiration date
+            if exp_date and (existing.expiration_date is None or exp_date < existing.expiration_date):
+                existing.expiration_date = exp_date
             added.append({"name": lib.name, "quantity": existing.quantity, "unit": ing.get("unit", "unit")})
         else:
             item = GroceryListItem(
@@ -506,6 +567,7 @@ def add_week_to_list(
                 library_item_id=lib.id,
                 quantity=qty,
                 unit=ing.get("unit", "unit"),
+                expiration_date=exp_date,
                 added_by_id=user.id,
                 added_by_display_name=user.name,
             )

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     firecrawl_api_key: str = ""     # for web scraping via Firecrawl (fallback: plain httpx)
     gemini_api_key: str = ""        # for recipe parsing via Gemini
 
-    model_config = {"env_prefix": "GROCERY_"}
+    model_config = {"env_prefix": "GROCERY_", "env_file": ".env", "env_file_encoding": "utf-8"}
 
 
 settings = Settings()

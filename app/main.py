@@ -10,7 +10,7 @@ from sqlalchemy import text
 from app.database import engine, SessionLocal, Base
 from app.config import settings
 from app.seed import seed_database
-from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes, gcal, recipe_import
+from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes, gcal, recipe_import, kid_schedule
 from app.ws import ConnectionManager
 
 ws_manager = ConnectionManager()
@@ -112,6 +112,11 @@ def _run_migrations():
                 if not any(row[1] == col for row in r):
                     conn.execute(text(f"ALTER TABLE recipes ADD COLUMN {col} {col_def}"))
                     conn.commit()
+        # recipe tags column
+        r = conn.execute(text("PRAGMA table_info(recipes)"))
+        if not any(row[1] == "tags" for row in r):
+            conn.execute(text("ALTER TABLE recipes ADD COLUMN tags TEXT DEFAULT '[]'"))
+            conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 
@@ -157,6 +162,7 @@ app.include_router(meal_plan.router)
 app.include_router(recipes.router)
 app.include_router(recipe_import.router)
 app.include_router(gcal.router)
+app.include_router(kid_schedule.router)
 
 static_dir = Path(__file__).parent / "static"
 uploads_dir = Path(settings.upload_dir) if settings.upload_dir else Path(__file__).resolve().parent.parent / "uploads"
