@@ -156,7 +156,13 @@ class Recipe(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(300), nullable=False)
-    source_path = Column(String(500), nullable=True)  # e.g. Obsidian vault path
+    source_path = Column(String(500), nullable=True)   # e.g. Obsidian vault path
+    source_url = Column(String(500), nullable=True)    # original URL (import-url)
+    thumbnail_url = Column(String(1000), nullable=True)
+    recipe_type = Column(String(20), nullable=True)    # main | dessert | starter | breakfast | snacks
+    nutrition = Column(JSONType, nullable=True)         # {calories, protein, carbs, fats} per serving
+    kid_friendly = Column(Boolean, nullable=True)
+    cooking_time_minutes = Column(Integer, nullable=True)
     default_servings = Column(Integer, nullable=False, default=4)
     ingredients = Column(JSONType, default=list)  # [{"name": str, "quantity": float, "unit": str}, ...]
     directions = Column(Text, nullable=True)

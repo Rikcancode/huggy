@@ -10,7 +10,7 @@ from sqlalchemy import text
 from app.database import engine, SessionLocal, Base
 from app.config import settings
 from app.seed import seed_database
-from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes, gcal
+from app.routers import categories, library, lists, supermarkets, reminders, users, auth, meal_plan, recipes, gcal, recipe_import
 from app.ws import ConnectionManager
 
 ws_manager = ConnectionManager()
@@ -98,6 +98,20 @@ def _run_migrations():
         for name, icon in icon_fixes.items():
             conn.execute(text("UPDATE library_items SET icon = :icon WHERE name = :name"), {"icon": icon, "name": name})
         conn.commit()
+        # recipe import columns
+        if engine.url.drivername == "sqlite":
+            for col, col_def in [
+                ("source_url", "VARCHAR(500)"),
+                ("thumbnail_url", "VARCHAR(1000)"),
+                ("recipe_type", "VARCHAR(20)"),
+                ("nutrition", "TEXT"),
+                ("kid_friendly", "INTEGER"),
+                ("cooking_time_minutes", "INTEGER"),
+            ]:
+                r = conn.execute(text("PRAGMA table_info(recipes)"))
+                if not any(row[1] == col for row in r):
+                    conn.execute(text(f"ALTER TABLE recipes ADD COLUMN {col} {col_def}"))
+                    conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 
@@ -141,6 +155,7 @@ app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(meal_plan.router)
 app.include_router(recipes.router)
+app.include_router(recipe_import.router)
 app.include_router(gcal.router)
 
 static_dir = Path(__file__).parent / "static"

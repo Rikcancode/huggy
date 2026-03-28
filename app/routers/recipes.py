@@ -15,6 +15,7 @@ from app.schemas import (
     RecipeUpdate,
     RecipeRatingUpdate,
     RecipeIngredient,
+    RecipeNutrition,
     ObsidianSyncFolderResult,
 )
 from app.auth import get_current_user
@@ -29,10 +30,17 @@ def _recipe_to_out(r: Recipe, user_id: int | None, db: Session) -> RecipeOut:
     ratings = db.query(RecipeRating).filter(RecipeRating.recipe_id == r.id).all()
     avg = (sum(x.rating for x in ratings) / len(ratings)) if ratings else None
     user_rating = next((x.rating for x in ratings if x.user_id == user_id), None)
+    nutrition = RecipeNutrition(**r.nutrition) if isinstance(r.nutrition, dict) else None
     return RecipeOut(
         id=r.id,
         name=r.name,
         source_path=r.source_path,
+        source_url=r.source_url,
+        thumbnail_url=r.thumbnail_url,
+        recipe_type=r.recipe_type,
+        nutrition=nutrition,
+        kid_friendly=r.kid_friendly,
+        cooking_time_minutes=r.cooking_time_minutes,
         default_servings=r.default_servings,
         ingredients=[RecipeIngredient(**x) for x in (r.ingredients or [])],
         directions=r.directions,

@@ -10,8 +10,34 @@ A self-hosted grocery list manager with a web UI. Manage shopping lists, an item
 - **Image Uploads** — attach photos to library items
 - **Repurchase Reminders** — set recurring reminders for items you buy regularly
 - **Supermarket Presets** — sort your list by aisle order for different stores
+- **Recipe Library** — import recipes from any URL (Instagram, blogs, YouTube) with one click
+- **Recipe URL Import** — paste an Instagram reel/post or recipe website URL; ingredients are extracted, converted to metric, and saved with nutrition estimates and kid-friendliness labels
 - **API Key Auth** — separate admin and user keys
 - **Duplicate Prevention** — adding an existing item returns an error or resets purchased items
+
+## Recipe URL Import
+
+Huggy can import recipes directly from a URL — Instagram reels/posts or any recipe website:
+
+```
+POST /api/recipes/import-url
+{"url": "https://www.instagram.com/reel/..."}
+```
+
+**How it works:**
+
+1. **Instagram URLs** (`instagram.com/reel/` or `/p/`) are scraped via [Apify](https://apify.com) — caption, thumbnail, and any linked recipe page are all extracted.
+2. **All other URLs** are scraped via [Firecrawl](https://firecrawl.dev) (if configured) or a direct HTTP request.
+3. Content is sent to **Gemini** (Google AI), which structures the recipe: ingredients are converted to metric, nutrition per serving is estimated, recipe type (`main`, `dessert`, `starter`, `breakfast`, `snacks`) and kid-friendliness are labelled.
+4. The recipe is saved to the database and immediately available in the recipe library.
+
+**Required environment variables:**
+
+| Variable | Description |
+|---|---|
+| `GROCERY_GEMINI_API_KEY` | Google AI API key — used for recipe parsing (required) |
+| `GROCERY_APIFY_API_TOKEN` | Apify token — required for Instagram URLs |
+| `GROCERY_FIRECRAWL_API_KEY` | Firecrawl key — recommended for recipe websites; falls back to direct fetch |
 
 ## Quick Start (Docker)
 

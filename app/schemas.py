@@ -260,10 +260,23 @@ class RecipeIngredient(BaseModel):
     unit: str
 
 
+class RecipeNutrition(BaseModel):
+    calories: float | None = None
+    protein: float | None = None
+    carbs: float | None = None
+    fats: float | None = None
+
+
 class RecipeOut(BaseModel):
     id: int
     name: str
     source_path: str | None
+    source_url: str | None = None
+    thumbnail_url: str | None = None
+    recipe_type: str | None = None
+    nutrition: RecipeNutrition | None = None
+    kid_friendly: bool | None = None
+    cooking_time_minutes: int | None = None
     default_servings: int
     ingredients: list[RecipeIngredient]
     directions: str | None

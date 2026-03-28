@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = ""   # e.g. http://your-server/api/gcal/callback
     google_calendar_id: str = "primary"
+    # Recipe URL import
+    apify_api_token: str = ""       # for Instagram scraping via Apify
+    firecrawl_api_key: str = ""     # for web scraping via Firecrawl (fallback: plain httpx)
+    gemini_api_key: str = ""        # for recipe parsing via Gemini
 
     model_config = {"env_prefix": "GROCERY_"}
 
