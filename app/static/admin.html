@@ -78,6 +78,24 @@ nav button:hover:not(.active) { border-color: var(--accent); }
 .nav-drawer-backdrop { display: block; pointer-events: none; }
 .nav-drawer-backdrop.open { pointer-events: auto; }
 
+/* ── Mobile bottom nav bar ── */
+.mobile-bottom-nav {
+  display: flex;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 120;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.mobile-bottom-nav button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 8px 4px; background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: .65rem; font-weight: 600; letter-spacing: .03em;
+  text-transform: uppercase; transition: color .15s;
+}
+.mobile-bottom-nav button .mbn-icon { font-size: 1.4rem; line-height: 1; }
+.mobile-bottom-nav button.active { color: var(--accent); }
+/* push page content above the bar */
+body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+
 .panel { display: none; }
 .panel.active { display: block; }
 
@@ -437,6 +455,34 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .recipe-overlay-directions { font-size: .88rem; line-height: 1.6; white-space: pre-wrap; color: var(--text); }
 .recipe-overlay-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 16px;
   border-top: 1px solid var(--border); }
+.recipe-sticky-footer { flex-shrink: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--surface); border-top: 1px solid var(--border); }
+/* Numbered instructions */
+.recipe-instructions { counter-reset: step; list-style: none; padding: 0; margin: 8px 0 16px; }
+.recipe-instructions li { counter-increment: step; display: flex; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--border); font-size: .9rem; line-height: 1.5; }
+.recipe-instructions li:last-child { border-bottom: none; }
+.recipe-instructions li::before { content: counter(step); min-width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-weight: 700; font-size: .78rem; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+/* Recipe edit mode */
+.recipe-img-upload-zone { width: 100%; min-height: 120px; background: var(--border); border-radius: var(--radius)
+  var(--radius) 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; overflow: hidden; color: var(--muted); font-size: .85rem; gap: 6px; }
+.recipe-img-upload-zone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.recipe-img-upload-zone .upload-hint { position: relative; z-index: 1; background: rgba(0,0,0,.5);
+  padding: 6px 14px; border-radius: 999px; color: #fff; font-size: .8rem; }
+.recipe-edit-field { margin-bottom: 14px; }
+.recipe-edit-field label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.recipe-edit-field input, .recipe-edit-field textarea, .recipe-edit-field select {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: .9rem; }
+.recipe-edit-field input:focus, .recipe-edit-field textarea:focus { outline: none; border-color: var(--accent); }
+.recipe-edit-field textarea { resize: vertical; min-height: 120px; font-family: inherit; line-height: 1.6; }
+.ings-textarea { min-height: 160px; font-family: 'Courier New', monospace; font-size: .82rem; }
+.edit-section-title { font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .06em; margin: 20px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 /* Meal plan week grid */
 .mealplan-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 8px; }
 @media (max-width: 640px) { .mealplan-week-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -1332,7 +1378,7 @@ function closeNavDrawer() {
   document.body.style.overflow = '';
 }
 function syncDrawerActiveTab(tabId) {
-  document.querySelectorAll('#tabs button, #nav-drawer-tabs button').forEach(b => {
+  document.querySelectorAll('#tabs button, #nav-drawer-tabs button, #mobile-bottom-nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tabId);
   });
 }
@@ -2757,78 +2803,264 @@ async function loadRecipes() {
 }
 
 async function openRecipeOverlay(recipeId) {
-  const r = await api(`/recipes/${recipeId}`);
+  let r = await api(`/recipes/${recipeId}`);
   let portions = r.default_servings || 4;
+  let editMode = false;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'recipe-overlay';
+  overlay.id = 'recipe-overlay';
+  document.body.appendChild(overlay);
 
   function ingHtml(scaledPortions) {
     const scale = scaledPortions / Math.max(1, r.default_servings);
     return (r.ingredients || []).map(i => {
       const qty = Math.round(i.quantity * scale * 100) / 100;
-      return `<li>${qty} ${escapeHtml(i.unit)} ${escapeHtml(i.name)}</li>`;
+      const qtyStr = qty % 1 === 0 ? qty : qty.toFixed(2).replace(/\.?0+$/, '');
+      return `<li><span style="min-width:80px;display:inline-block;color:var(--muted)">${qtyStr} ${escapeHtml(i.unit)}</span> ${escapeHtml(i.name)}</li>`;
     }).join('');
   }
 
-  const imgHtml = r.thumbnail_url
-    ? `<img class="recipe-overlay-img" src="${escapeHtml(r.thumbnail_url)}" alt="${escapeHtml(r.name)}" onerror="this.style.display='none'">`
-    : '';
-  const tagsHtml = (r.tags || []).map(t => `<span class="recipe-overlay-tag">${escapeHtml(t)}</span>`).join('');
-  const sourceHtml = r.source_url
-    ? `<a href="${escapeHtml(r.source_url)}" target="_blank" rel="noopener" style="font-size:.82rem;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:10px">
-        🔗 ${escapeHtml(new URL(r.source_url).hostname)}</a>`
-    : (r.source_path ? `<div style="font-size:.8rem;color:var(--muted);margin-bottom:10px">📝 ${escapeHtml(r.source_path)}</div>` : '');
+  function instructionsHtml(directions) {
+    if (!directions?.trim()) return '';
+    const steps = directions.split('\n').map(s => s.trim()).filter(Boolean);
+    return `<ol class="recipe-instructions">${steps.map(s => `<li><span>${escapeHtml(s)}</span></li>`).join('')}</ol>`;
+  }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'recipe-overlay';
-  overlay.id = 'recipe-overlay';
-  overlay.innerHTML = `
-    <div class="recipe-overlay-header">
-      <button class="add-overlay-close" onclick="document.getElementById('recipe-overlay').remove()">✕</button>
-      <span class="recipe-overlay-title">${escapeHtml(r.name)}</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn-sm" onclick="openEditTagsModal(${r.id})">Tags</button>
-        <button class="btn-sm" style="color:var(--red)" onclick="confirmDeleteRecipe(${r.id})">Delete</button>
+  function sourceHtml() {
+    if (r.source_url) {
+      let hostname = r.source_url;
+      try { hostname = new URL(r.source_url).hostname; } catch(_) {}
+      return `<a href="${escapeHtml(r.source_url)}" target="_blank" rel="noopener"
+        style="font-size:.82rem;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:12px">
+        🔗 ${escapeHtml(hostname)}</a>`;
+    }
+    if (r.source_path) return `<div style="font-size:.8rem;color:var(--muted);margin-bottom:10px">📝 ${escapeHtml(r.source_path)}</div>`;
+    return '';
+  }
+
+  function renderView() {
+    const tagsHtml = (r.tags || []).map(t => `<span class="recipe-overlay-tag">${escapeHtml(t)}</span>`).join('');
+    const imgHtml = r.thumbnail_url
+      ? `<img class="recipe-overlay-img" src="${escapeHtml(r.thumbnail_url)}" alt="${escapeHtml(r.name)}" onerror="this.style.display='none'">`
+      : `<div style="width:100%;height:80px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:3rem">${_recipeEmoji(r)}</div>`;
+    const metaBits = [
+      r.prep_time_minutes && `🔪 Prep ${r.prep_time_minutes} min`,
+      r.cooking_time_minutes && `⏱ Cook ${r.cooking_time_minutes} min`,
+      r.oven_temp_celsius && r.oven_duration_minutes && `🔥 ${r.oven_temp_celsius}°C · ${r.oven_duration_minutes} min${r.oven_mode ? ' · ' + r.oven_mode : ''}`,
+      r.recipe_type,
+      r.kid_friendly && '👶 Kid-friendly',
+    ].filter(Boolean);
+    overlay.innerHTML = `
+      <div class="recipe-overlay-header">
+        <button class="add-overlay-close" onclick="document.getElementById('recipe-overlay').remove()">✕</button>
+        <span class="recipe-overlay-title">${escapeHtml(r.name)}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm btn-primary" id="ro-edit-btn" style="font-size:.82rem">✏ Edit</button>
+          <button class="btn-sm" style="color:var(--red);font-size:.82rem" onclick="confirmDeleteRecipe(${r.id})">Delete</button>
+        </div>
       </div>
-    </div>
-    <div class="recipe-overlay-body">
-      ${imgHtml}
-      <div class="recipe-overlay-content">
-        ${tagsHtml ? `<div class="recipe-overlay-tags">${tagsHtml}</div>` : ''}
-        ${sourceHtml}
-        <div class="portions-row">
-          <span class="portions-label">Portions</span>
-          <div class="portions-stepper">
-            <button class="portions-btn" type="button" id="ro-portions-dec">−</button>
-            <span class="portions-val" id="ro-portions-val">${portions}</span>
-            <button class="portions-btn" type="button" id="ro-portions-inc">+</button>
+      <div class="recipe-overlay-body">
+        ${imgHtml}
+        <div class="recipe-overlay-content">
+          ${tagsHtml ? `<div class="recipe-overlay-tags" style="margin-bottom:10px">${tagsHtml}</div>` : ''}
+          ${sourceHtml()}
+          ${metaBits.length ? `<div style="font-size:.8rem;color:var(--muted);margin-bottom:14px">${metaBits.join(' · ')}</div>` : ''}
+          <div class="edit-section-title">Ingredients</div>
+          <ul class="recipe-overlay-ings" id="ro-ings" style="list-style:disc;padding-left:18px">${ingHtml(portions)}</ul>
+          ${r.directions ? `<div class="edit-section-title">Instructions</div>${instructionsHtml(r.directions)}` : ''}
+          <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+            <span style="font-size:.85rem;color:var(--muted)">Your rating:</span>
+            <span id="ro-stars">${_starsWidget(r.user_rating, r.id)}</span>
+          </div>
+          <div style="height:100px"></div>
+        </div>
+      </div>
+      <div class="recipe-sticky-footer">
+        <div class="portions-stepper" style="margin-right:auto">
+          <span style="font-size:.8rem;color:var(--muted);margin-right:6px">Portions</span>
+          <button class="portions-btn" type="button" id="ro-portions-dec">−</button>
+          <span class="portions-val" id="ro-portions-val">${portions}</span>
+          <button class="portions-btn" type="button" id="ro-portions-inc">+</button>
+        </div>
+        <button type="button" class="btn-primary" id="ro-meal-plan-btn" style="flex:1;max-width:160px">📅 Meal plan</button>
+        <button type="button" class="btn-sm" id="ro-list-btn" style="flex:1;max-width:140px">🛒 Add to list</button>
+      </div>`;
+    overlay.querySelector('#ro-edit-btn').onclick = () => { editMode = true; renderEdit(); };
+    overlay.querySelector('#ro-portions-dec').onclick = () => {
+      portions = Math.max(1, portions - 1);
+      overlay.querySelector('#ro-portions-val').textContent = portions;
+      overlay.querySelector('#ro-ings').innerHTML = ingHtml(portions);
+    };
+    overlay.querySelector('#ro-portions-inc').onclick = () => {
+      portions++;
+      overlay.querySelector('#ro-portions-val').textContent = portions;
+      overlay.querySelector('#ro-ings').innerHTML = ingHtml(portions);
+    };
+    overlay.querySelector('#ro-meal-plan-btn').onclick = () => addRecipeToMealPlanFlow(r, portions);
+    overlay.querySelector('#ro-list-btn').onclick = () => addRecipeToListFlow(r.id, portions);
+  }
+
+  function renderEdit() {
+    const allTags = ['meat','fish','rice','pasta','dessert','snack','salad','breakfast','lowfat','fast'];
+    const currentTags = new Set(r.tags || []);
+    const ingText = (r.ingredients || []).map(i => `${i.quantity} ${i.unit} ${i.name}`).join('\n');
+    const imgSrc = r.thumbnail_url || '';
+    overlay.innerHTML = `
+      <div class="recipe-overlay-header">
+        <button class="add-overlay-close" onclick="document.getElementById('recipe-overlay').remove()">✕</button>
+        <span class="recipe-overlay-title">Edit Recipe</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm btn-primary" id="ro-save-btn" style="font-size:.82rem">💾 Save</button>
+          <button class="btn-sm" id="ro-cancel-btn" style="font-size:.82rem">Cancel</button>
+        </div>
+      </div>
+      <div class="recipe-overlay-body">
+        <div class="recipe-img-upload-zone" id="ro-img-zone" onclick="document.getElementById('ro-img-input').click()">
+          ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="" id="ro-img-preview">` : ''}
+          <span class="upload-hint">📷 ${imgSrc ? 'Change photo' : 'Add photo'}</span>
+          <input type="file" id="ro-img-input" accept="image/*" style="display:none">
+        </div>
+        <div class="recipe-overlay-content">
+          <div class="recipe-edit-field">
+            <label>Recipe name</label>
+            <input id="ro-edit-name" value="${escapeHtml(r.name)}" placeholder="Recipe name">
+          </div>
+          <div style="display:flex;gap:12px">
+            <div class="recipe-edit-field" style="flex:1">
+              <label>Default servings</label>
+              <input id="ro-edit-servings" type="number" min="1" value="${r.default_servings || 4}">
+            </div>
+            <div class="recipe-edit-field" style="flex:1">
+              <label>Prep time (min)</label>
+              <input id="ro-edit-prep" type="number" min="1" value="${r.prep_time_minutes || ''}">
+            </div>
+            <div class="recipe-edit-field" style="flex:1">
+              <label>Cook time (min)</label>
+              <input id="ro-edit-time" type="number" min="1" value="${r.cooking_time_minutes || ''}">
+            </div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div class="recipe-edit-field" style="flex:2">
+              <label>Oven temp (°C)</label>
+              <input id="ro-edit-oven-temp" type="number" min="50" max="300" value="${r.oven_temp_celsius || ''}" placeholder="e.g. 180">
+            </div>
+            <div class="recipe-edit-field" style="flex:2">
+              <label>Oven time (min)</label>
+              <input id="ro-edit-oven-dur" type="number" min="1" value="${r.oven_duration_minutes || ''}" placeholder="e.g. 25">
+            </div>
+            <div class="recipe-edit-field" style="flex:2">
+              <label>Oven mode</label>
+              <select id="ro-edit-oven-mode">
+                <option value="">—</option>
+                <option value="static"${r.oven_mode === 'static' ? ' selected' : ''}>Static</option>
+                <option value="ventilated"${r.oven_mode === 'ventilated' ? ' selected' : ''}>Ventilated</option>
+              </select>
+            </div>
+          </div>
+          <div class="recipe-edit-field">
+            <label>Source URL</label>
+            <input id="ro-edit-source" type="url" value="${escapeHtml(r.source_url || '')}" placeholder="https://…">
+          </div>
+          <div class="recipe-edit-field">
+            <label>Tags</label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+              ${allTags.map(t => `<button type="button" class="tag-btn${currentTags.has(t) ? ' active' : ''}"
+                data-tag="${t}" onclick="this.classList.toggle('active')" style="font-size:.75rem">${t}</button>`).join('')}
+            </div>
+          </div>
+          <div class="recipe-edit-field">
+            <label>Ingredients <span style="font-weight:400;font-style:italic">(one per line: quantity unit name)</span></label>
+            <textarea id="ro-edit-ings" class="ings-textarea" placeholder="500 g Chicken breast&#10;2 Eggs&#10;30 ml Olive oil">${escapeHtml(ingText)}</textarea>
+          </div>
+          <div class="recipe-edit-field">
+            <label>Instructions <span style="font-weight:400;font-style:italic">(one step per line)</span></label>
+            <textarea id="ro-edit-directions" style="min-height:180px" placeholder="Preheat oven to 180°C.&#10;Mix the ingredients.&#10;Bake for 30 minutes.">${escapeHtml(r.directions || '')}</textarea>
           </div>
         </div>
-        <strong style="font-size:.9rem">Ingredients</strong>
-        <ul class="recipe-overlay-ings" id="ro-ings">${ingHtml(portions)}</ul>
-        ${r.directions ? `<strong style="font-size:.9rem">Directions</strong><div class="recipe-overlay-directions" style="margin-top:8px">${escapeHtml(r.directions)}</div>` : ''}
-        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-          <span style="font-size:.85rem;color:var(--muted)">Your rating:</span>
-          <span id="ro-stars">${_starsWidget(r.user_rating, r.id)}</span>
-        </div>
-        <div class="recipe-overlay-actions">
-          <button type="button" class="btn-primary btn-sm" id="ro-meal-plan-btn">Add to meal plan</button>
-          <button type="button" class="btn-sm" id="ro-list-btn">Add ingredients to list</button>
-        </div>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
+      </div>`;
 
-  document.getElementById('ro-portions-dec').onclick = () => {
-    portions = Math.max(1, portions - 1);
-    document.getElementById('ro-portions-val').textContent = portions;
-    document.getElementById('ro-ings').innerHTML = ingHtml(portions);
-  };
-  document.getElementById('ro-portions-inc').onclick = () => {
-    portions++;
-    document.getElementById('ro-portions-val').textContent = portions;
-    document.getElementById('ro-ings').innerHTML = ingHtml(portions);
-  };
-  document.getElementById('ro-meal-plan-btn').onclick = () => addRecipeToMealPlanFlow(r, portions);
-  document.getElementById('ro-list-btn').onclick = () => addRecipeToListFlow(r.id, portions);
+    // Image preview on file select
+    overlay.querySelector('#ro-img-input').onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        let img = overlay.querySelector('#ro-img-preview');
+        if (!img) {
+          img = document.createElement('img');
+          img.id = 'ro-img-preview';
+          overlay.querySelector('#ro-img-zone').prepend(img);
+        }
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    overlay.querySelector('#ro-cancel-btn').onclick = () => { editMode = false; renderView(); };
+
+    overlay.querySelector('#ro-save-btn').onclick = async () => {
+      const name = overlay.querySelector('#ro-edit-name').value.trim();
+      if (!name) { toast('Name is required'); return; }
+      const servings = parseInt(overlay.querySelector('#ro-edit-servings').value) || 4;
+      const prepTime = parseInt(overlay.querySelector('#ro-edit-prep').value) || null;
+      const cookTime = parseInt(overlay.querySelector('#ro-edit-time').value) || null;
+      const ovenTemp = parseInt(overlay.querySelector('#ro-edit-oven-temp').value) || null;
+      const ovenDur = parseInt(overlay.querySelector('#ro-edit-oven-dur').value) || null;
+      const ovenMode = overlay.querySelector('#ro-edit-oven-mode').value || null;
+      const sourceUrl = overlay.querySelector('#ro-edit-source').value.trim() || null;
+      const tags = [...overlay.querySelectorAll('.tag-btn.active[data-tag]')].map(b => b.dataset.tag);
+      const directions = overlay.querySelector('#ro-edit-directions').value.trim() || null;
+
+      // Parse ingredients: "qty unit name"
+      const ingLines = overlay.querySelector('#ro-edit-ings').value.split('\n').map(l => l.trim()).filter(Boolean);
+      const ingredients = ingLines.map(line => {
+        const parts = line.split(/\s+/);
+        const qty = parseFloat(parts[0]);
+        if (!isNaN(qty) && parts.length >= 3) {
+          return { quantity: qty, unit: parts[1], name: parts.slice(2).join(' ') };
+        } else if (!isNaN(qty) && parts.length === 2) {
+          return { quantity: qty, unit: 'unit', name: parts[1] };
+        } else {
+          return { quantity: 1, unit: 'unit', name: line };
+        }
+      });
+
+      const saveBtn = overlay.querySelector('#ro-save-btn');
+      saveBtn.disabled = true;
+      try {
+        r = await api(`/recipes/${r.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, source_url: sourceUrl, default_servings: servings,
+            prep_time_minutes: prepTime, cooking_time_minutes: cookTime,
+            oven_temp_celsius: ovenTemp, oven_duration_minutes: ovenDur, oven_mode: ovenMode,
+            tags, ingredients, directions }),
+        });
+        // Upload image if a file was selected
+        const fileInput = overlay.querySelector('#ro-img-input');
+        if (fileInput?.files[0]) {
+          const fd = new FormData();
+          fd.append('file', fileInput.files[0]);
+          const imgRes = await fetch(`/api/recipes/${r.id}/image`, {
+            method: 'POST',
+            body: fd,
+            credentials: 'include',
+          });
+          if (imgRes.ok) r = await imgRes.json();
+        }
+        portions = r.default_servings || 4;
+        editMode = false;
+        renderView();
+        loadRecipes();
+        toast('Saved');
+      } catch (e) {
+        toast(e.message || 'Save failed');
+        saveBtn.disabled = false;
+      }
+    };
+  }
+
+  renderView();
 }
 
 function _starsWidget(current, recipeId) {
@@ -3112,8 +3344,20 @@ async function openImportRecipeModal() {
           <label style="font-size:.8rem;color:var(--muted)">Servings</label>
           <input id="imp-serv" type="number" min="1" value="${d.default_servings || 4}" style="width:70px;margin-top:4px">
         </div>
-        ${d.cooking_time_minutes ? `<div><label style="font-size:.8rem;color:var(--muted)">Cook time (min)</label>
-          <input id="imp-time" type="number" min="1" value="${d.cooking_time_minutes}" style="width:80px;margin-top:4px"></div>` : ''}
+        ${d.prep_time_minutes ? `<div><label style="font-size:.8rem;color:var(--muted)">Prep (min)</label>
+          <input id="imp-prep" type="number" min="1" value="${d.prep_time_minutes}" style="width:70px;margin-top:4px"></div>` : ''}
+        ${d.cooking_time_minutes ? `<div><label style="font-size:.8rem;color:var(--muted)">Cook (min)</label>
+          <input id="imp-time" type="number" min="1" value="${d.cooking_time_minutes}" style="width:70px;margin-top:4px"></div>` : ''}
+        ${d.oven_temp_celsius ? `<div><label style="font-size:.8rem;color:var(--muted)">Oven (°C)</label>
+          <input id="imp-oven-temp" type="number" min="50" max="300" value="${d.oven_temp_celsius}" style="width:70px;margin-top:4px"></div>` : ''}
+        ${d.oven_duration_minutes ? `<div><label style="font-size:.8rem;color:var(--muted)">Oven (min)</label>
+          <input id="imp-oven-dur" type="number" min="1" value="${d.oven_duration_minutes}" style="width:70px;margin-top:4px"></div>` : ''}
+        ${d.oven_temp_celsius ? `<div><label style="font-size:.8rem;color:var(--muted)">Oven mode</label>
+          <select id="imp-oven-mode" style="margin-top:4px">
+            <option value="">—</option>
+            <option value="static"${d.oven_mode === 'static' ? ' selected' : ''}>Static</option>
+            <option value="ventilated"${d.oven_mode === 'ventilated' ? ' selected' : ''}>Ventilated</option>
+          </select></div>` : ''}
       </div>
       <div style="margin-bottom:10px">
         <label style="font-size:.8rem;color:var(--muted)">Source</label>
@@ -3177,7 +3421,11 @@ async function openImportRecipeModal() {
     if (!previewData) return;
     const name = document.getElementById('imp-name')?.value?.trim() || previewData.name;
     const servings = parseInt(document.getElementById('imp-serv')?.value || previewData.default_servings);
-    const cookTime = document.getElementById('imp-time') ? parseInt(document.getElementById('imp-time').value) : previewData.cooking_time_minutes;
+    const prepTime = document.getElementById('imp-prep') ? parseInt(document.getElementById('imp-prep').value) || null : previewData.prep_time_minutes || null;
+    const cookTime = document.getElementById('imp-time') ? parseInt(document.getElementById('imp-time').value) || null : previewData.cooking_time_minutes || null;
+    const ovenTemp = document.getElementById('imp-oven-temp') ? parseInt(document.getElementById('imp-oven-temp').value) || null : previewData.oven_temp_celsius || null;
+    const ovenDur = document.getElementById('imp-oven-dur') ? parseInt(document.getElementById('imp-oven-dur').value) || null : previewData.oven_duration_minutes || null;
+    const ovenMode = document.getElementById('imp-oven-mode') ? document.getElementById('imp-oven-mode').value || null : previewData.oven_mode || null;
     const tags = [...document.querySelectorAll('#modal-container .tag-btn.active[data-tag]')].map(b => b.dataset.tag);
     const payload = {
       name,
@@ -3185,7 +3433,11 @@ async function openImportRecipeModal() {
       source_url: previewData.source_url,
       thumbnail_url: previewData.thumbnail_url,
       default_servings: servings || 4,
-      cooking_time_minutes: cookTime || null,
+      prep_time_minutes: prepTime,
+      cooking_time_minutes: cookTime,
+      oven_temp_celsius: ovenTemp,
+      oven_duration_minutes: ovenDur,
+      oven_mode: ovenMode,
       recipe_type: previewData.recipe_type || null,
       nutrition: previewData.nutrition || null,
       kid_friendly: previewData.kid_friendly || null,
@@ -3673,5 +3925,21 @@ document.getElementById('drawer-do-reset').addEventListener('click', async funct
   }
 })();
 </script>
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+  <button data-tab="shopping" class="active">
+    <span class="mbn-icon">🛒</span>
+    <span>Grocery</span>
+  </button>
+  <button data-tab="mealplan">
+    <span class="mbn-icon">📅</span>
+    <span>Meal Plan</span>
+  </button>
+  <button data-tab="calendar">
+    <span class="mbn-icon">🗓</span>
+    <span>Calendar</span>
+  </button>
+</nav>
 </body>
 </html>

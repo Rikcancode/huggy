@@ -112,11 +112,18 @@ def _run_migrations():
                 if not any(row[1] == col for row in r):
                     conn.execute(text(f"ALTER TABLE recipes ADD COLUMN {col} {col_def}"))
                     conn.commit()
-        # recipe tags column
-        r = conn.execute(text("PRAGMA table_info(recipes)"))
-        if not any(row[1] == "tags" for row in r):
-            conn.execute(text("ALTER TABLE recipes ADD COLUMN tags TEXT DEFAULT '[]'"))
-            conn.commit()
+        # recipe tags + prep/oven columns
+        for col, col_def in [
+            ("tags", "TEXT DEFAULT '[]'"),
+            ("prep_time_minutes", "INTEGER"),
+            ("oven_temp_celsius", "INTEGER"),
+            ("oven_duration_minutes", "INTEGER"),
+            ("oven_mode", "VARCHAR(20)"),
+        ]:
+            r = conn.execute(text("PRAGMA table_info(recipes)"))
+            if not any(row[1] == col for row in r):
+                conn.execute(text(f"ALTER TABLE recipes ADD COLUMN {col} {col_def}"))
+                conn.commit()
         # activity_log table (create if not exists via create_all in lifespan)
 
 

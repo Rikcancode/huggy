@@ -162,7 +162,11 @@ class Recipe(Base):
     recipe_type = Column(String(20), nullable=True)    # main | dessert | starter | breakfast | snacks
     nutrition = Column(JSONType, nullable=True)         # {calories, protein, carbs, fats} per serving
     kid_friendly = Column(Boolean, nullable=True)
+    prep_time_minutes = Column(Integer, nullable=True)
     cooking_time_minutes = Column(Integer, nullable=True)
+    oven_temp_celsius = Column(Integer, nullable=True)
+    oven_duration_minutes = Column(Integer, nullable=True)
+    oven_mode = Column(String(20), nullable=True)  # 'static' | 'ventilated'
     tags = Column(JSONType, default=list)  # ["meat", "pasta", ...]
     default_servings = Column(Integer, nullable=False, default=4)
     ingredients = Column(JSONType, default=list)  # [{"name": str, "quantity": float, "unit": str}, ...]

@@ -91,7 +91,11 @@ Return ONLY valid JSON (no markdown fences), with this exact structure:
 {{
   "name": "Recipe Name",
   "default_servings": 4,
+  "prep_time_minutes": 15,
   "cooking_time_minutes": 30,
+  "oven_temp_celsius": 180,
+  "oven_duration_minutes": 25,
+  "oven_mode": "ventilated",
   "recipe_type": "main",
   "kid_friendly": true,
   "directions": "Step-by-step instructions as a single string.",
@@ -112,6 +116,11 @@ Rules:
 - Convert ALL measurements to metric (g, ml, °C). Keep original in parentheses in directions if helpful.
 - nutrition values are per serving (estimate from standard food composition tables)
 - kid_friendly: consider spice level, allergens, texture
+- prep_time_minutes: active preparation time (chopping, mixing) before cooking
+- cooking_time_minutes: total active cooking/baking time
+- oven_temp_celsius: set to null if recipe doesn't use an oven
+- oven_duration_minutes: set to null if recipe doesn't use an oven
+- oven_mode: "static" or "ventilated" (fan-assisted); set to null if no oven
 - If no recipe is found in the content, return {{"error": "No recipe found"}}
 """
 
@@ -173,7 +182,11 @@ def preview_recipe_import(
         "source_url": url,
         "thumbnail_url": thumbnail_url,
         "default_servings": int(parsed.get("default_servings") or 4),
+        "prep_time_minutes": parsed.get("prep_time_minutes"),
         "cooking_time_minutes": parsed.get("cooking_time_minutes"),
+        "oven_temp_celsius": parsed.get("oven_temp_celsius"),
+        "oven_duration_minutes": parsed.get("oven_duration_minutes"),
+        "oven_mode": parsed.get("oven_mode"),
         "recipe_type": parsed.get("recipe_type"),
         "nutrition": parsed.get("nutrition"),
         "kid_friendly": parsed.get("kid_friendly"),
@@ -218,7 +231,11 @@ def import_recipe_from_url(
         source_path=None,
         thumbnail_url=thumbnail_url,
         default_servings=int(parsed.get("default_servings") or 4),
+        prep_time_minutes=parsed.get("prep_time_minutes"),
         cooking_time_minutes=parsed.get("cooking_time_minutes"),
+        oven_temp_celsius=parsed.get("oven_temp_celsius"),
+        oven_duration_minutes=parsed.get("oven_duration_minutes"),
+        oven_mode=parsed.get("oven_mode"),
         recipe_type=parsed.get("recipe_type"),
         nutrition=parsed.get("nutrition"),
         kid_friendly=parsed.get("kid_friendly"),

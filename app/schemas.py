@@ -276,7 +276,11 @@ class RecipeOut(BaseModel):
     recipe_type: str | None = None
     nutrition: RecipeNutrition | None = None
     kid_friendly: bool | None = None
+    prep_time_minutes: int | None = None
     cooking_time_minutes: int | None = None
+    oven_temp_celsius: int | None = None
+    oven_duration_minutes: int | None = None
+    oven_mode: str | None = None  # 'static' | 'ventilated'
     tags: list[str] = []
     default_servings: int
     ingredients: list[RecipeIngredient]
@@ -294,7 +298,11 @@ class RecipeCreate(BaseModel):
     source_path: str | None = None
     source_url: str | None = None
     thumbnail_url: str | None = None
+    prep_time_minutes: int | None = None
     cooking_time_minutes: int | None = None
+    oven_temp_celsius: int | None = None
+    oven_duration_minutes: int | None = None
+    oven_mode: str | None = None  # 'static' | 'ventilated'
     recipe_type: str | None = None
     kid_friendly: bool | None = None
     nutrition: RecipeNutrition | None = None
@@ -306,7 +314,14 @@ class RecipeCreate(BaseModel):
 
 class RecipeUpdate(BaseModel):
     name: str | None = None
+    source_url: str | None = None
+    thumbnail_url: str | None = None
     default_servings: int | None = None
+    prep_time_minutes: int | None = None
+    cooking_time_minutes: int | None = None
+    oven_temp_celsius: int | None = None
+    oven_duration_minutes: int | None = None
+    oven_mode: str | None = None
     tags: list[str] | None = None
     ingredients: list[RecipeIngredient] | None = None
     directions: str | None = None

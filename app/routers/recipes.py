@@ -3,7 +3,9 @@ Recipes: CRUD, Obsidian sync, ratings, add ingredients to list, week aggregation
 """
 from datetime import date
 import time
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+import uuid
+from pathlib import Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Body, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 
@@ -43,7 +45,11 @@ def _recipe_to_out(r: Recipe, user_id: int | None, db: Session) -> RecipeOut:
         recipe_type=r.recipe_type,
         nutrition=nutrition,
         kid_friendly=r.kid_friendly,
+        prep_time_minutes=r.prep_time_minutes,
         cooking_time_minutes=r.cooking_time_minutes,
+        oven_temp_celsius=r.oven_temp_celsius,
+        oven_duration_minutes=r.oven_duration_minutes,
+        oven_mode=r.oven_mode,
         tags=tags,
         default_servings=r.default_servings,
         ingredients=[RecipeIngredient(**x) for x in (r.ingredients or [])],
@@ -330,7 +336,11 @@ def create_recipe(
         source_path=data.source_path,
         source_url=data.source_url,
         thumbnail_url=data.thumbnail_url,
+        prep_time_minutes=data.prep_time_minutes,
         cooking_time_minutes=data.cooking_time_minutes,
+        oven_temp_celsius=data.oven_temp_celsius,
+        oven_duration_minutes=data.oven_duration_minutes,
+        oven_mode=data.oven_mode,
         recipe_type=data.recipe_type,
         kid_friendly=data.kid_friendly,
         nutrition=nutrition,
@@ -357,8 +367,22 @@ def update_recipe(
         raise HTTPException(404, "Recipe not found")
     if data.name is not None:
         r.name = data.name
+    if data.source_url is not None:
+        r.source_url = data.source_url or None
+    if data.thumbnail_url is not None:
+        r.thumbnail_url = data.thumbnail_url or None
     if data.default_servings is not None:
         r.default_servings = data.default_servings
+    if data.prep_time_minutes is not None:
+        r.prep_time_minutes = data.prep_time_minutes
+    if data.cooking_time_minutes is not None:
+        r.cooking_time_minutes = data.cooking_time_minutes
+    if data.oven_temp_celsius is not None:
+        r.oven_temp_celsius = data.oven_temp_celsius
+    if data.oven_duration_minutes is not None:
+        r.oven_duration_minutes = data.oven_duration_minutes
+    if data.oven_mode is not None:
+        r.oven_mode = data.oven_mode or None
     if data.tags is not None:
         r.tags = data.tags
     if data.ingredients is not None:
@@ -381,6 +405,39 @@ def delete_recipe(
         raise HTTPException(404, "Recipe not found")
     db.delete(r)
     db.commit()
+
+
+_UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
+_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+_ALLOWED_IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+
+@router.post("/{recipe_id}/image", response_model=RecipeOut)
+async def upload_recipe_image(
+    recipe_id: int,
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload a thumbnail image for a recipe."""
+    r = db.get(Recipe, recipe_id)
+    if not r:
+        raise HTTPException(404, "Recipe not found")
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in _ALLOWED_IMG_EXTS:
+        raise HTTPException(400, f"Allowed: {', '.join(_ALLOWED_IMG_EXTS)}")
+    contents = await file.read()
+    if len(contents) > 8 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 8 MB)")
+    filename = f"recipe_{uuid.uuid4().hex}{ext}"
+    (_UPLOAD_DIR / filename).write_bytes(contents)
+    if r.thumbnail_url and r.thumbnail_url.startswith("/uploads/"):
+        old = _UPLOAD_DIR / Path(r.thumbnail_url).name
+        old.unlink(missing_ok=True)
+    r.thumbnail_url = f"/uploads/{filename}"
+    db.commit()
+    db.refresh(r)
+    return _recipe_to_out(r, user.id, db)
 
 
 @router.post("/{recipe_id}/rate", response_model=RecipeOut)
